@@ -2,8 +2,17 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>WBS Inspektorat Kota Padang - Whistleblowing System</title>
+    <meta name="description" content="Sistem Whistleblowing resmi Inspektorat Kota Padang. Laporkan dugaan korupsi, pungli, dan gratifikasi secara aman dan terenkripsi 24/7.">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WBS Padang">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta property="og:title" content="WBS Inspektorat Kota Padang">
+    <meta property="og:description" content="Laporkan pelanggaran secara aman dan terenkripsi melalui Whistleblowing System resmi Inspektorat Kota Padang.">
+    <meta property="og:type" content="website">
     
     <!-- Google Fonts: Public Sans (Headings) & Inter (Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -463,6 +472,14 @@
                             <span>Ditolak</span>
                             <span class="badge badge-red" id="admin-badge-ditolak">0</span>
                         </a>
+                        <!-- Divider -->
+                        <div style="height:1px; background:var(--color-surface-border); margin: var(--space-xs) 0;"></div>
+                        <a href="#" class="admin-nav-item" id="admin-nav-sla-guide" onclick="showAdminSLAGuide()">
+                            <span>📋 Panduan SLA</span>
+                        </a>
+                        <a href="#" class="admin-nav-item" id="admin-nav-change-password" onclick="showAdminChangePassword()">
+                            <span>🔑 Ganti Password</span>
+                        </a>
                     </nav>
                     
                     <button class="btn btn-outline-danger admin-logout-btn" onclick="logoutAdmin()">Keluar Admin Area</button>
@@ -547,9 +564,232 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- SLA GUIDE SECTION (hidden by default, toggled by sidebar menu) -->
+                    <div id="admin-sla-guide" style="display:none;">
+                        <div class="sla-guide-section">
+                            <div class="sla-guide-header">
+                                <div class="sla-guide-header-icon">📋</div>
+                                <div>
+                                    <h2>Panduan SLA Penanganan Pengaduan WBS</h2>
+                                    <p>Service Level Agreement — standar batas waktu penanganan setiap tahapan laporan Whistleblowing System Inspektorat Kota Padang</p>
+                                </div>
+                            </div>
+
+                            <!-- FLOWCHART -->
+                            <div class="sla-flowchart-container">
+                                <div class="sla-flowchart-title">🔄 Alur Proses Penanganan Laporan WBS</div>
+                                <div class="sla-flowchart-wrap">
+
+                                    <!-- START -->
+                                    <div class="fc-node">
+                                        <div class="fc-box fc-start">
+                                            <div class="fc-box-icon">📬</div>
+                                            <div class="fc-box-content">
+                                                <div class="fc-box-title">Laporan Masuk dari Pelapor</div>
+                                                <div class="fc-box-desc">Pelapor mengisi formulir & mendapat token unik (WBS-PDG-YYYYMMDD-XXXXXX). Identitas dienkripsi AES-256.</div>
+                                            </div>
+                                            <span class="fc-box-sla">T+0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="fc-arrow">
+                                        <div class="fc-arrow-line"></div>
+                                        <div class="fc-arrow-head"></div>
+                                    </div>
+
+                                    <!-- DIAJUKAN -->
+                                    <div class="fc-node">
+                                        <div class="fc-box fc-diajukan">
+                                            <div class="fc-box-icon">📥</div>
+                                            <div class="fc-box-content">
+                                                <div class="fc-box-title">Status: DIAJUKAN</div>
+                                                <div class="fc-box-desc">Laporan diterima sistem. Admin mendapat notifikasi Telegram otomatis. Perlu diverifikasi maksimal 1 hari kerja.</div>
+                                            </div>
+                                            <span class="fc-box-sla">Max: 1 Hari Kerja</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="fc-arrow">
+                                        <div class="fc-arrow-label">Admin melakukan telaah awal &amp; mengubah status</div>
+                                        <div class="fc-arrow-line"></div>
+                                        <div class="fc-arrow-head"></div>
+                                    </div>
+
+                                    <!-- DIVERIFIKASI -->
+                                    <div class="fc-node">
+                                        <div class="fc-box fc-diverifikasi">
+                                            <div class="fc-box-icon">🔍</div>
+                                            <div class="fc-box-content">
+                                                <div class="fc-box-title">Status: DIVERIFIKASI</div>
+                                                <div class="fc-box-desc">Inspektorat meninjau keabsahan laporan, memeriksa bukti, dan berkomunikasi dengan pelapor jika perlu. Harus diselesaikan dalam 6 hari kerja.</div>
+                                            </div>
+                                            <span class="fc-box-sla">Max: 6 Hari Kerja</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="fc-arrow">
+                                        <div class="fc-arrow-label">Laporan dinilai layak ditindaklanjuti</div>
+                                        <div class="fc-arrow-line"></div>
+                                        <div class="fc-arrow-head"></div>
+                                    </div>
+
+                                    <!-- DITINDAKLANJUTI -->
+                                    <div class="fc-node">
+                                        <div class="fc-box fc-ditindaklanjuti">
+                                            <div class="fc-box-icon">🏛️</div>
+                                            <div class="fc-box-content">
+                                                <div class="fc-box-title">Status: DITINDAKLANJUTI</div>
+                                                <div class="fc-box-desc">Tim pemeriksa melakukan investigasi lapangan, pengumpulan data, dan auditing. Batas penyelesaian 14 hari kerja dari tanggal penindaklanjutan.</div>
+                                            </div>
+                                            <span class="fc-box-sla">Max: 14 Hari Kerja</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- BRANCH: Selesai atau Ditolak -->
+                                    <div class="fc-branch">
+                                        <div class="fc-branch-path">
+                                            <div class="fc-arrow">
+                                                <div class="fc-arrow-line"></div>
+                                                <div class="fc-arrow-head"></div>
+                                            </div>
+                                            <div class="fc-branch-label approved">✅ TERBUKTI / LAYAK DITUTUP</div>
+                                            <div class="fc-box fc-selesai" style="max-width:280px;">
+                                                <div class="fc-box-icon">✅</div>
+                                                <div class="fc-box-content">
+                                                    <div class="fc-box-title">Status: SELESAI</div>
+                                                    <div class="fc-box-desc">Kasus ditutup dengan catatan hasil pemeriksaan. Tindakan hukum/disiplin diambil jika terbukti. Pelapor mendapat update akhir.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="fc-branch-path">
+                                            <div class="fc-arrow">
+                                                <div class="fc-arrow-line"></div>
+                                                <div class="fc-arrow-head"></div>
+                                            </div>
+                                            <div class="fc-branch-label rejected">❌ TIDAK MEMENUHI SYARAT</div>
+                                            <div class="fc-box fc-ditolak" style="max-width:280px;">
+                                                <div class="fc-box-icon">❌</div>
+                                                <div class="fc-box-content">
+                                                    <div class="fc-box-title">Status: DITOLAK</div>
+                                                    <div class="fc-box-desc">Laporan ditutup karena tidak memenuhi syarat, tidak cukup bukti, atau di luar kewenangan Inspektorat.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- SLA TABLE -->
+                            <div class="sla-table-container">
+                                <h3>📊 Tabel Ringkasan Batas Waktu SLA per Tahapan</h3>
+                                <div class="table-responsive">
+                                    <table class="sla-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Tahapan Status</th>
+                                                <th>Pemicu Perubahan Status</th>
+                                                <th>Batas Waktu</th>
+                                                <th>Target Tindakan Admin</th>
+                                                <th>Indikator Peringatan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><span class="sla-status-pill" style="background:#fef3c7;color:#92400e;">📥 Diajukan</span></td>
+                                                <td>Pelapor berhasil mengirim laporan via formulir</td>
+                                                <td><span class="sla-days-badge">1 Hari Kerja</span></td>
+                                                <td>Admin melakukan verifikasi awal, baca laporan, dan ubah status ke <em>Diverifikasi</em></td>
+                                                <td>🔴 Merah — jika belum diverifikasi dalam 1 hari kerja sejak laporan masuk</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="sla-status-pill" style="background:#dbeafe;color:#1e40af;">🔍 Diverifikasi</span></td>
+                                                <td>Admin mengubah status dari Diajukan ke Diverifikasi</td>
+                                                <td><span class="sla-days-badge">6 Hari Kerja</span></td>
+                                                <td>Inspektorat menyelesaikan telaah &amp; memutuskan apakah laporan layak ditindaklanjuti</td>
+                                                <td>🔴 Merah — jika telaah melebihi 6 hari kerja dari tanggal verifikasi</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="sla-status-pill" style="background:#e0e7ff;color:#3730a3;">🏛️ Ditindaklanjuti</span></td>
+                                                <td>Admin mengubah status ke Ditindaklanjuti</td>
+                                                <td><span class="sla-days-badge">14 Hari Kerja</span></td>
+                                                <td>Tim pemeriksa menyelesaikan investigasi lapangan &amp; menyiapkan laporan hasil pemeriksaan akhir</td>
+                                                <td>🔴 Merah — jika penyelesaian melebihi 14 hari kerja dari tanggal penindaklanjutan</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="sla-status-pill" style="background:#d1fae5;color:#065f46;">✅ Selesai</span></td>
+                                                <td>Admin menutup kasus setelah investigasi selesai</td>
+                                                <td><span class="sla-days-badge">Tuntas</span></td>
+                                                <td>Kasus ditutup resmi. Laporan hasil tersedia. Tindakan disiplin/hukum diambil jika terbukti.</td>
+                                                <td>— (tidak ada batas)</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="sla-status-pill" style="background:#fee2e2;color:#991b1b;">❌ Ditolak</span></td>
+                                                <td>Admin menolak laporan karena tidak memenuhi syarat</td>
+                                                <td><span class="sla-days-badge">Ditutup</span></td>
+                                                <td>Laporan ditutup dengan alasan penolakan yang tercatat dan tersampaikan kepada pelapor</td>
+                                                <td>— (tidak ada batas)</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- NOTES CARDS -->
+                            <div class="sla-notes-grid">
+                                <div class="sla-note-card blue">
+                                    <h4>🔐 Enkripsi Identitas AES-256-GCM</h4>
+                                    <p>Seluruh data identitas pelapor (Nama, NIK, Email, No. HP) dienkripsi menggunakan algoritma AES-256-GCM sebelum tersimpan di database. Kunci enkripsi disimpan terpisah di server. Hanya Admin yang dapat mendekripsi data tersebut.</p>
+                                </div>
+                                <div class="sla-note-card green">
+                                    <h4>🎫 Nomor Tiket Unik Kriptografis</h4>
+                                    <p>Setiap laporan mendapatkan token unik format <strong>WBS-PDG-YYYYMMDD-XXXXXX</strong> yang dibuat menggunakan <code>crypto.getRandomValues()</code> browser — jauh lebih aman dari random biasa. Token ini digunakan pelapor untuk melacak status kapan saja 24/7.</p>
+                                </div>
+                                <div class="sla-note-card orange">
+                                    <h4>⚠️ Indikator Warna Badge SLA</h4>
+                                    <p>Sistem otomatis menghitung sisa hari kerja menuju batas SLA. Badge <span style="color:#10b981;font-weight:700;">HIJAU</span> = tepat waktu, <span style="color:#f59e0b;font-weight:700;">KUNING</span> = jatuh tempo hari ini, <span style="color:#ef4444;font-weight:700;">MERAH</span> = sudah terlambat. Lihat di kolom "Batas SLA" pada tabel pengaduan.</p>
+                                </div>
+                                <div class="sla-note-card red">
+                                    <h4>📱 Aksesibilitas 24/7 Browser &amp; Mobile</h4>
+                                    <p>Sistem WBS ini dapat diakses kapan saja, 24 jam sehari 7 hari seminggu, melalui browser desktop maupun perangkat mobile (smartphone &amp; tablet). Tampilan responsif penuh dengan breakpoint 1024px, 768px, dan 480px.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ADMIN CHANGE PASSWORD SECTION -->
+                    <div id="admin-change-password-section" style="display:none; padding: var(--space-lg) var(--space-md);">
+                        <div class="form-wrapper" style="max-width: 500px; margin: 0 auto; padding: var(--space-md); background: var(--color-surface-card); border-radius: var(--border-radius-lg); border: 1px solid var(--color-surface-border); box-shadow: var(--shadow-sm);">
+                            <div class="form-header" style="margin-bottom: var(--space-md);">
+                                <h2 style="color: var(--color-primary); font-family: var(--font-heading); margin-bottom: var(--space-xs);">🔑 Ubah Password Admin</h2>
+                                <p style="font-size: 0.875rem; color: var(--color-text-muted);">Silakan masukkan password lama Anda dan tentukan password baru yang aman.</p>
+                            </div>
+                            <form id="admin-change-password-form" onsubmit="changeAdminPassword(event)">
+                                <div class="form-group" style="margin-bottom: var(--space-sm);">
+                                    <label for="change-pass-current" style="display: block; margin-bottom: var(--space-xxs); font-weight: 500;">Password Lama <span class="required-star" style="color: var(--color-danger);">*</span></label>
+                                    <input type="password" id="change-pass-current" class="form-control" style="width: 100%; border: 1px solid var(--color-surface-border); border-radius: var(--border-radius-sm); padding: var(--space-xs);" required>
+                                </div>
+                                <div class="form-group" style="margin-bottom: var(--space-sm);">
+                                    <label for="change-pass-new" style="display: block; margin-bottom: var(--space-xxs); font-weight: 500;">Password Baru <span class="required-star" style="color: var(--color-danger);">*</span></label>
+                                    <input type="password" id="change-pass-new" class="form-control" style="width: 100%; border: 1px solid var(--color-surface-border); border-radius: var(--border-radius-sm); padding: var(--space-xs);" placeholder="Minimal 6 karakter" required>
+                                </div>
+                                <div class="form-group" style="margin-bottom: var(--space-md);">
+                                    <label for="change-pass-confirm" style="display: block; margin-bottom: var(--space-xxs); font-weight: 500;">Konfirmasi Password Baru <span class="required-star" style="color: var(--color-danger);">*</span></label>
+                                    <input type="password" id="change-pass-confirm" class="form-control" style="width: 100%; border: 1px solid var(--color-surface-border); border-radius: var(--border-radius-sm); padding: var(--space-xs);" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: var(--space-xs);">
+                                    Simpan Password Baru
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
+
 
     </main>
 
@@ -558,8 +798,13 @@
         <div class="footer-container">
             <div class="footer-info">
                 <h3>Inspektorat Kota Padang</h3>
-                <p>Jl. Bagindo Aziz Chan No. 1, Aie Pacah, Kec. Koto Tangah, Kota Padang, Sumatera Barat</p>
+                <p>Jl. Sawahan Nomor 50 Kota Padang, Kelurahan Sawahan Timur, Kecamatan Padang Timur, Kota Padang, Provinsi Sumatera Barat</p>
                 <p>Email: <a href="mailto:inspektorat@padang.go.id">inspektorat@padang.go.id</a> | Telp: (0751) 461011</p>
+                <p style="margin-top: var(--space-xs);">
+                    Hubungi kami: 
+                    <a href="https://wa.me/628117180117" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent); font-weight: 600; text-decoration: underline;">🟢 WhatsApp (08117180117)</a> | 
+                    <a href="https://instagram.com/inspektoratpdg" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent); font-weight: 600; text-decoration: underline;">📸 Instagram (@inspektoratpdg)</a>
+                </p>
             </div>
             <div class="footer-links">
                 <a href="#" onclick="navigateTo('home')">Beranda</a> • 
@@ -617,16 +862,17 @@
             </div>
             
             <form onsubmit="handleAdminLogin(event)">
-                <div class="form-group">
+                <div class="form-group" id="login-username-group">
                     <label for="admin-username">Username <span class="required-star">*</span></label>
-                    <input type="text" id="admin-username" placeholder="Masukkan username admin" required>
+                    <input type="text" id="admin-username" placeholder="Masukkan username admin">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="login-password-group" style="display: none;">
                     <label for="admin-password">Password <span class="required-star">*</span></label>
-                    <input type="password" id="admin-password" placeholder="Masukkan password admin" required>
-                    <span id="login-error-msg" class="login-error-msg hidden">Username atau Password Salah!</span>
+                    <input type="password" id="admin-password" placeholder="Masukkan password admin">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Masuk Dashboard</button>
+                <span id="login-error-msg" class="login-error-msg hidden" style="color: var(--color-danger); display: block; margin-bottom: var(--space-sm); font-size: 0.875rem;">Username atau Password Salah!</span>
+                <button type="button" id="login-next-btn" class="btn btn-primary btn-block" onclick="handleUsernameCheck()">Lanjutkan</button>
+                <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block" style="display: none;">Masuk Dashboard</button>
             </form>
         </div>
     </div>

@@ -224,13 +224,27 @@ function handleFormSubmit(event) {
     
     const isAnonim = document.getElementById('toggle-anonim').checked;
     
-    // Generate Unique Token (e.g. WBS-PDG-2026-X79K2)
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous chars
+    // Generate Unique Token — Format: WBS-PDG-YYYYMMDD-XXXXXX
+    // Uses date stamp for traceability + 6-char alphanumeric for collision resistance
+    const now = new Date();
+    const datePart = now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous chars (0,O,I,1)
     let randomPart = '';
-    for (let i = 0; i < 5; i++) {
-        randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Use crypto.getRandomValues if available (browser), otherwise Math.random
+    const arr = new Uint32Array(6);
+    if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(arr);
+        for (let i = 0; i < 6; i++) {
+            randomPart += chars.charAt(arr[i] % chars.length);
+        }
+    } else {
+        for (let i = 0; i < 6; i++) {
+            randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
     }
-    const token = `WBS-PDG-2026-${randomPart}`;
+    const token = `WBS-PDG-${datePart}-${randomPart}`;
     
     const dateSubmitted = new Date().toISOString();
     
@@ -669,11 +683,38 @@ function openAdminPortal() {
         navigateTo('admin');
         fetchAdminReports();
     } else {
+        // Reset login state to Step 1
+        loginStep = 1;
+        const usernameInput = document.getElementById('admin-username');
+        if (usernameInput) {
+            usernameInput.value = "";
+            usernameInput.readOnly = false;
+        }
+        
+        const passwordInput = document.getElementById('admin-password');
+        if (passwordInput) passwordInput.value = "";
+        
+        const passwordGroup = document.getElementById('login-password-group');
+        if (passwordGroup) passwordGroup.style.display = 'none';
+        
+        const nextBtn = document.getElementById('login-next-btn');
+        if (nextBtn) {
+            nextBtn.style.display = '';
+            nextBtn.textContent = 'Lanjutkan';
+        }
+        
+        const submitBtn = document.getElementById('login-submit-btn');
+        if (submitBtn) {
+            submitBtn.style.display = 'none';
+            submitBtn.textContent = 'Masuk Dashboard';
+        }
+        
+        const errorMsg = document.getElementById('login-error-msg');
+        if (errorMsg) errorMsg.classList.add('hidden');
+        
         // Show Auth Username and Password modal
         document.getElementById('modal-admin-login').classList.add('active');
-        document.getElementById('admin-username').value = "";
-        document.getElementById('admin-password').value = "";
-        document.getElementById('login-error-msg').classList.add('hidden');
+        if (usernameInput) usernameInput.focus();
     }
 }
 
@@ -681,11 +722,76 @@ function closeAdminLoginModal() {
     document.getElementById('modal-admin-login').classList.remove('active');
 }
 
+// Step 1: Validate username before enabling password input
+let loginStep = 1; // 1 = username step, 2 = password step
+
+function handleUsernameCheck() {
+    const usernameInput = document.getElementById('admin-username');
+    const passwordGroup = document.getElementById('login-password-group');
+    const errorMsg = document.getElementById('login-error-msg');
+    const username = usernameInput.value.trim();
+    const nextBtn = document.getElementById('login-next-btn');
+    const submitBtn = document.getElementById('login-submit-btn');
+    
+    if (!username) {
+        errorMsg.textContent = 'Username tidak boleh kosong';
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+    
+    errorMsg.classList.add('hidden');
+    if (nextBtn) nextBtn.textContent = 'Memeriksa...';
+    
+    fetch('/api/check-username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (nextBtn) nextBtn.textContent = 'Lanjutkan';
+        if (data.success) {
+            // Username valid — show password field
+            loginStep = 2;
+            usernameInput.readOnly = true;
+            if (passwordGroup) passwordGroup.style.display = '';
+            if (submitBtn) submitBtn.style.display = '';
+            if (nextBtn) nextBtn.style.display = 'none';
+            document.getElementById('admin-password').focus();
+        } else {
+            errorMsg.textContent = data.message || 'Username tidak ditemukan.';
+            errorMsg.classList.remove('hidden');
+        }
+    })
+    .catch(err => {
+        if (nextBtn) nextBtn.textContent = 'Lanjutkan';
+        errorMsg.textContent = 'Gagal menghubungi server. Coba lagi.';
+        errorMsg.classList.remove('hidden');
+    });
+}
+
 function handleAdminLogin(event) {
     event.preventDefault();
+    
+    if (loginStep === 1) {
+        handleUsernameCheck();
+        return;
+    }
+    
     const username = document.getElementById('admin-username').value.trim();
     const password = document.getElementById('admin-password').value.trim();
     const errorMsg = document.getElementById('login-error-msg');
+    const submitBtn = document.getElementById('login-submit-btn');
+    
+    // Password length validation (6-50 chars)
+    if (password.length < 6 || password.length > 50) {
+        errorMsg.textContent = 'Password harus antara 6-50 karakter';
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+    
+    if (submitBtn) submitBtn.textContent = 'Memverifikasi...';
+    errorMsg.classList.add('hidden');
     
     // Validate credentials securely via backend server API
     fetch('/api/login', {
@@ -693,29 +799,84 @@ function handleAdminLogin(event) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
     })
-    .then(res => {
-        if (!res.ok) {
-            throw new Error('Unauthorized');
-        }
-        return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
+        if (submitBtn) submitBtn.textContent = 'Login';
         if (data.success) {
             sessionStorage.setItem('wbs_admin_token', data.token);
             document.getElementById('nav-admin').textContent = 'Admin Dashboard';
             closeAdminLoginModal();
             navigateTo('admin');
             fetchAdminReports();
+            // Reset login state
+            loginStep = 1;
         } else {
+            errorMsg.textContent = data.message || 'Username atau Password salah!';
             errorMsg.classList.remove('hidden');
         }
     })
     .catch(err => {
-        console.error('Error logging in:', err);
-        errorMsg.textContent = "Username atau Password Salah!";
+        if (submitBtn) submitBtn.textContent = 'Login';
+        errorMsg.textContent = 'Terjadi kesalahan saat login. Coba lagi.';
         errorMsg.classList.remove('hidden');
     });
 }
+
+// Admin: Change password
+function changeAdminPassword(event) {
+    if (event) event.preventDefault();
+    
+    const currentPass = document.getElementById('change-pass-current') ? 
+        document.getElementById('change-pass-current').value : '';
+    const newPass = document.getElementById('change-pass-new') ? 
+        document.getElementById('change-pass-new').value : '';
+    const confirmPass = document.getElementById('change-pass-confirm') ?
+        document.getElementById('change-pass-confirm').value : '';
+    
+    if (!currentPass || !newPass || !confirmPass) {
+        alert('Semua field wajib diisi');
+        return;
+    }
+    if (newPass !== confirmPass) {
+        alert('Password baru dan konfirmasi tidak cocok');
+        return;
+    }
+    if (newPass.length < 6 || newPass.length > 50) {
+        alert('Password baru harus antara 6-50 karakter');
+        return;
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=\[\]{}|\\:";'<>?,.\/~`-])[A-Za-z\d@$!%*?&#^()_+=\[\]{}|\\:";'<>?,.\/~`-]{6,50}$/;
+    if (!passwordRegex.test(newPass)) {
+        alert('Password baru harus mengandung minimal 1 huruf besar, 1 huruf kecil, 1 angka, dan 1 karakter spesial');
+        return;
+    }
+    
+    const adminToken = sessionStorage.getItem('wbs_admin_token');
+    fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ currentPassword: currentPass, newPassword: newPass })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Force logout after password change
+            sessionStorage.removeItem('wbs_admin_token');
+            navigateTo('home');
+        } else {
+            alert(data.message || 'Gagal mengubah password');
+        }
+    })
+    .catch(err => {
+        alert('Terjadi kesalahan. Coba lagi.');
+    });
+}
+
+
 
 function logoutAdmin() {
     const token = sessionStorage.getItem('wbs_admin_token');
@@ -832,6 +993,9 @@ function updateAdminStats() {
 function filterAdminReports(status) {
     currentAdminFilter = status;
     
+    // Restore main dashboard view (in case SLA guide is showing)
+    showAdminDashboard();
+    
     // Update active nav state in sidebar
     const items = document.querySelectorAll('.admin-nav-item');
     items.forEach(it => it.classList.remove('active'));
@@ -849,6 +1013,80 @@ function filterAdminReports(status) {
     if (activeItem) activeItem.classList.add('active');
     
     renderAdminReports();
+}
+
+// Show the SLA Guide panel in admin workspace
+function showAdminSLAGuide() {
+    // Remove active state from all nav items
+    const items = document.querySelectorAll('.admin-nav-item');
+    items.forEach(it => it.classList.remove('active'));
+    
+    // Activate the SLA nav item
+    const slaNav = document.getElementById('admin-nav-sla-guide');
+    if (slaNav) slaNav.classList.add('active');
+    
+    // Hide all workspace children except the SLA guide
+    const workspace = document.querySelector('.admin-workspace');
+    if (workspace) {
+        Array.from(workspace.children).forEach(child => {
+            if (child.id === 'admin-sla-guide') {
+                child.style.display = 'block';
+            } else {
+                child.style.display = 'none';
+            }
+        });
+    }
+    
+    // Prevent default anchor behavior
+    return false;
+}
+
+// Show the Change Password panel in admin workspace
+function showAdminChangePassword() {
+    // Remove active state from all nav items
+    const items = document.querySelectorAll('.admin-nav-item');
+    items.forEach(it => it.classList.remove('active'));
+    
+    // Activate the Change Password nav item
+    const changePassNav = document.getElementById('admin-nav-change-password');
+    if (changePassNav) changePassNav.classList.add('active');
+    
+    // Hide all workspace children except the Change Password section
+    const workspace = document.querySelector('.admin-workspace');
+    if (workspace) {
+        Array.from(workspace.children).forEach(child => {
+            if (child.id === 'admin-change-password-section') {
+                child.style.display = 'block';
+            } else {
+                child.style.display = 'none';
+            }
+        });
+    }
+    
+    // Reset the change password form fields and errors
+    const currentPass = document.getElementById('change-pass-current');
+    const newPass = document.getElementById('change-pass-new');
+    const confirmPass = document.getElementById('change-pass-confirm');
+    if (currentPass) currentPass.value = "";
+    if (newPass) newPass.value = "";
+    if (confirmPass) confirmPass.value = "";
+    
+    return false;
+}
+
+// Show the main admin dashboard (reports table) — used to return from SLA guide/change password
+function showAdminDashboard() {
+    // Restore all workspace children (hiding SLA guide and change password sections)
+    const workspace = document.querySelector('.admin-workspace');
+    if (workspace) {
+        Array.from(workspace.children).forEach(child => {
+            if (child.id === 'admin-sla-guide' || child.id === 'admin-change-password-section') {
+                child.style.display = 'none';
+            } else {
+                child.style.display = '';
+            }
+        });
+    }
 }
 
 function renderAdminReports(searchQuery = "") {

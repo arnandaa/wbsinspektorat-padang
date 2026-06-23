@@ -7,19 +7,120 @@ const fs = require('fs');
 const crypto = require('crypto');
 const https = require('https');
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 const LOG_FILE = path.join(__dirname, 'server.log');
 
 // Cryptographically secure active sessions storage (in-memory)
-const activeSessions = new Set();
+// Format: token -> { createdAt: Date, username: string }
+const activeSessions = new Map();
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours session timeout
 
-// Middleware for parsing JSON body
-app.use(express.json({ limit: '10mb' })); // limit JSON payload to protect from Denial of Service (DoS)
+// Failed login attempt tracking for brute-force protection
+// Format: ip -> { count: number, lockedUntil: Date|null }
+const loginAttempts = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-// Serve static frontend files safely
+/* ==========================================================================
+   SECURITY MIDDLEWARE STACK
+   ========================================================================== */
+
+// 1. Security Headers via Helmet (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
+            scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, onsubmit, etc.)
+            styleSrc: ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
+            fontSrc: ["'self'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            connectSrc: ["'self'"],
+            frameSrc: ["'none'"],
+            objectSrc: ["'none'"]
+        }
+    },
+    hsts: {
+        maxAge: 31536000,       // 1 year
+        includeSubDomains: true,
+        preload: true
+    },
+    noSniff: true,              // X-Content-Type-Options: nosniff
+    xssFilter: true,            // X-XSS-Protection (legacy browsers)
+    frameguard: { action: 'deny' }, // X-Frame-Options: DENY
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
+
+// 2. Rate Limiting — General API (max 100 req/15 min per IP)
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Terlalu banyak permintaan. Silakan coba lagi dalam 15 menit.' },
+    handler: (req, res, next, options) => {
+        writeLog('WARN', `Rate limit exceeded on ${req.url} from IP: ${req.ip}`);
+        res.status(429).json(options.message);
+    }
+});
+
+// 3. Strict Rate Limiting — Login endpoint (max 10 req/15 min per IP)
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true, // Only count failed attempts
+    message: { success: false, message: 'Terlalu banyak percobaan login. Akun terkunci sementara 15 menit.' },
+    handler: (req, res, next, options) => {
+        writeLog('WARN', `Login rate limit exceeded from IP: ${req.ip}`);
+        res.status(429).json(options.message);
+    }
+});
+
+app.use('/api/', generalLimiter);
+
+// 4. Middleware for parsing JSON body
+app.use(express.json({ limit: '10mb' })); // Limit JSON payload to protect from DoS
+
+// 4.5. Secure File Protection Middleware: Block direct access to sensitive project files
+app.use((req, res, next) => {
+    const forbiddenFiles = [
+        /^\/\.env/i,
+        /^\/server\.js/i,
+        /^\/server\.log/i,
+        /^\/package\.json/i,
+        /^\/package-lock\.json/i,
+        /^\/wbs_database\.db/i,
+        /^\/\.git/i,
+        /^\/node_modules/i
+    ];
+    if (forbiddenFiles.some(regex => regex.test(req.path))) {
+        writeLog('WARN', `Unauthorized access attempt to sensitive file: ${req.path} from IP: ${req.ip}`);
+        return res.status(403).json({ success: false, message: 'Akses ditolak: File sensitif' });
+    }
+    next();
+});
+
+// 5. Serve static frontend files safely
 app.use(express.static(__dirname));
+
+// 6. HTTPS Redirect Middleware (if behind a proxy/load balancer in production)
+app.use((req, res, next) => {
+    // Add Strict-Transport-Security manually for proxy environments
+    if (process.env.NODE_ENV === 'production') {
+        if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
+            return res.redirect(301, `https://${req.hostname}${req.url}`);
+        }
+    }
+    next();
+});
+
 
 // Cybersecurity Standard: Logging utility
 function writeLog(level, message) {
@@ -41,27 +142,131 @@ function formatError(err) {
 }
 
 /* ==========================================================================
-   PostgreSQL DATABASE INITIALIZATION
+   IDENTITY ENCRYPTION (AES-256-GCM)
+   Encrypts sensitive reporter identity fields before database storage.
    ========================================================================== */
 
-// Handle SSL requirements for hosted databases (like Railway/Supabase/Neon)
-const sslConfig = process.env.DATABASE_URL && 
-                  !process.env.DATABASE_URL.includes('localhost') && 
-                  !process.env.DATABASE_URL.includes('127.0.0.1')
-    ? { rejectUnauthorized: false }
-    : false;
+const ENCRYPTION_KEY_HEX = process.env.ENCRYPTION_KEY;
+const ENCRYPTION_ALGO = 'aes-256-gcm';
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: sslConfig
-});
+function encryptData(text) {
+    if (!text || !ENCRYPTION_KEY_HEX) return text;
+    try {
+        const key = Buffer.from(ENCRYPTION_KEY_HEX, 'hex');
+        const iv = crypto.randomBytes(12); // 96-bit IV for GCM
+        const cipher = crypto.createCipheriv(ENCRYPTION_ALGO, key, iv);
+        let encrypted = cipher.update(text, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        const authTag = cipher.getAuthTag().toString('hex');
+        // Format: iv:authTag:encryptedData
+        return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+    } catch (e) {
+        writeLog('WARN', `Encryption failed, storing plaintext: ${e.message}`);
+        return text;
+    }
+}
+
+function decryptData(encryptedText) {
+    if (!encryptedText || !ENCRYPTION_KEY_HEX) return encryptedText;
+    // Check if it looks encrypted (contains two colons)
+    if (!encryptedText.includes(':')) return encryptedText;
+    try {
+        const parts = encryptedText.split(':');
+        if (parts.length !== 3) return encryptedText;
+        const [ivHex, authTagHex, encrypted] = parts;
+        const key = Buffer.from(ENCRYPTION_KEY_HEX, 'hex');
+        const iv = Buffer.from(ivHex, 'hex');
+        const authTag = Buffer.from(authTagHex, 'hex');
+        const decipher = crypto.createDecipheriv(ENCRYPTION_ALGO, key, iv);
+        decipher.setAuthTag(authTag);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    } catch (e) {
+        writeLog('WARN', `Decryption failed, returning raw value: ${e.message}`);
+        return encryptedText;
+    }
+}
+
+/* ==========================================================================
+   DATABASE CONFIGURATION & INITIALIZATION (PostgreSQL & SQLite)
+   ========================================================================== */
+
+const usePostgres = !!process.env.DATABASE_URL;
+let dbAdapter;
+
+if (usePostgres) {
+    const sslConfig = process.env.DATABASE_URL && 
+                      !process.env.DATABASE_URL.includes('localhost') && 
+                      !process.env.DATABASE_URL.includes('127.0.0.1')
+        ? { rejectUnauthorized: false }
+        : false;
+
+    const pgPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: sslConfig
+    });
+
+    dbAdapter = {
+        isPostgres: true,
+        query: (text, params) => pgPool.query(text, params),
+        connect: () => pgPool.connect(),
+        end: () => pgPool.end()
+    };
+} else {
+    // SQLite local fallback
+    const sqlite3 = require('sqlite3').verbose();
+    const sqliteDb = new sqlite3.Database(path.join(__dirname, 'wbs_database.db'));
+
+    const sqliteQuery = (sql, params = []) => {
+        // Replace PostgreSQL $1, $2 with SQLite ?
+        const normalizedSql = sql.replace(/\$\d+/g, '?');
+        return new Promise((resolve, reject) => {
+            const isSelect = /^\s*select/i.test(normalizedSql);
+            if (isSelect) {
+                sqliteDb.all(normalizedSql, params, (err, rows) => {
+                    if (err) return reject(err);
+                    resolve({ rows });
+                });
+            } else {
+                sqliteDb.run(normalizedSql, params, function(err) {
+                    if (err) return reject(err);
+                    resolve({ rows: [], lastID: this.lastID, changes: this.changes });
+                });
+            }
+        });
+    };
+
+    dbAdapter = {
+        isPostgres: false,
+        query: (text, params) => sqliteQuery(text, params),
+        connect: async () => {
+            return {
+                query: (text, params) => sqliteQuery(text, params),
+                release: () => {}
+            };
+        },
+        end: () => {
+            return new Promise((resolve, reject) => {
+                sqliteDb.close((err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+        }
+    };
+}
+
+const pool = dbAdapter;
 
 async function initDb() {
     const client = await pool.connect();
     try {
+        const idType = pool.isPostgres ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
+        
         await client.query(`
             CREATE TABLE IF NOT EXISTS reports (
-                id SERIAL PRIMARY KEY,
+                id ${idType},
                 token VARCHAR(50) UNIQUE NOT NULL,
                 date_submitted VARCHAR(50) NOT NULL,
                 is_anonim INTEGER NOT NULL DEFAULT 1,
@@ -82,7 +287,7 @@ async function initDb() {
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS report_history (
-                id SERIAL PRIMARY KEY,
+                id ${idType},
                 report_token VARCHAR(50) NOT NULL REFERENCES reports(token) ON DELETE CASCADE,
                 status VARCHAR(50) NOT NULL,
                 note TEXT,
@@ -98,9 +303,9 @@ async function initDb() {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_history_token ON report_history(report_token);`);
 
-        writeLog('SYSTEM', 'PostgreSQL database initialized successfully.');
+        writeLog('SYSTEM', `${pool.isPostgres ? 'PostgreSQL' : 'SQLite'} database initialized successfully.`);
     } catch (err) {
-        writeLog('ERROR', `Failed to initialize PostgreSQL database: ${formatError(err)}`);
+        writeLog('ERROR', `Failed to initialize database: ${formatError(err)}`);
         throw err;
     } finally {
         client.release();
@@ -236,10 +441,11 @@ async function getReportByToken(token) {
         fileName: report.file_name,
         fileData: report.file_data,
         status: report.status,
-        reporterName: report.reporter_name,
-        reporterNik: report.reporter_nik,
-        reporterEmail: report.reporter_email,
-        reporterHp: report.reporter_hp,
+        // Decrypt sensitive identity fields
+        reporterName: decryptData(report.reporter_name),
+        reporterNik: decryptData(report.reporter_nik),
+        reporterEmail: decryptData(report.reporter_email),
+        reporterHp: decryptData(report.reporter_hp),
         history: historyRes.rows.map(h => ({
             status: h.status,
             note: h.note,
@@ -271,10 +477,11 @@ async function getAllReports() {
             fileName: report.file_name,
             fileData: report.file_data,
             status: report.status,
-            reporterName: report.reporter_name,
-            reporterNik: report.reporter_nik,
-            reporterEmail: report.reporter_email,
-            reporterHp: report.reporter_hp,
+            // Decrypt sensitive identity fields
+            reporterName: decryptData(report.reporter_name),
+            reporterNik: decryptData(report.reporter_nik),
+            reporterEmail: decryptData(report.reporter_email),
+            reporterHp: decryptData(report.reporter_hp),
             history: historyRes.rows.map(h => ({
                 status: h.status,
                 note: h.note,
@@ -439,9 +646,18 @@ function authenticateToken(req, res, next) {
         return res.status(401).json({ success: false, message: 'Akses ditolak: Token tidak ditemukan' });
     }
     
-    if (!activeSessions.has(token)) {
+    const session = activeSessions.get(token);
+    if (!session) {
         writeLog('WARN', `Access denied: Invalid session token used on ${req.method} ${req.url}`);
-        return res.status(403).json({ success: false, message: 'Akses ditolak: Sesi tidak valid' });
+        return res.status(403).json({ success: false, message: 'Akses ditolak: Sesi tidak valid atau sudah berakhir' });
+    }
+    
+    // Session timeout check (8 hours)
+    const now = Date.now();
+    if (now - session.createdAt > SESSION_DURATION_MS) {
+        activeSessions.delete(token);
+        writeLog('INFO', `Session expired for admin user. Token removed.`);
+        return res.status(401).json({ success: false, message: 'Sesi telah berakhir. Silakan login kembali.' });
     }
     
     next();
@@ -458,7 +674,7 @@ app.get('/api/health', async (req, res) => {
         const count = parseInt(reportCountRes.rows[0].count, 10);
         res.json({
             status: 'OK',
-            database: 'PostgreSQL connected',
+            database: `${pool.isPostgres ? 'PostgreSQL' : 'SQLite'} connected`,
             reports: count,
             telegram: {
                 botToken: process.env.TELEGRAM_BOT_TOKEN ? 'configured' : 'not configured',
@@ -472,7 +688,7 @@ app.get('/api/health', async (req, res) => {
         });
     } catch (err) {
         writeLog('ERROR', `Health check failed: ${formatError(err)}`);
-        res.status(500).json({ status: 'ERROR', database: 'PostgreSQL connection failed', message: formatError(err) });
+        res.status(500).json({ status: 'ERROR', database: `${pool.isPostgres ? 'PostgreSQL' : 'SQLite'} connection failed`, message: formatError(err) });
     }
 });
 
@@ -540,10 +756,11 @@ app.post('/api/reports', async (req, res) => {
                 report.fileName || null,
                 report.fileData || null,
                 'Diajukan',
-                report.reporterName || null,
-                report.reporterNik || null,
-                report.reporterEmail || null,
-                report.reporterHp || null
+                // Encrypt sensitive identity fields before storing
+                report.isAnonim ? null : encryptData(report.reporterName || null),
+                report.isAnonim ? null : encryptData(report.reporterNik || null),
+                report.isAnonim ? null : encryptData(report.reporterEmail || null),
+                report.isAnonim ? null : encryptData(report.reporterHp || null)
             ]);
             
             // Insert initial history entry
@@ -649,33 +866,190 @@ app.post('/api/reports/comment', async (req, res) => {
    SECURE ADMIN API ENDPOINTS
    ========================================================================== */
 
-// SECURE API: Admin Login
-app.post('/api/login', (req, res) => {
+// SECURE API: Check username (Step 1 of 2-step login — verify username before allowing password input)
+app.post('/api/check-username', loginLimiter, (req, res) => {
+    const { username } = req.body;
+    const adminUser = process.env.ADMIN_USERNAME;
+    
+    if (!username || typeof username !== 'string' || username.trim() === '') {
+        return res.status(400).json({ success: false, message: 'Username tidak boleh kosong' });
+    }
+    
+    if (!adminUser) {
+        return res.status(500).json({ success: false, message: 'Admin belum dikonfigurasi' });
+    }
+    
+    // Compare username (case-insensitive for usability)
+    const isValid = username.trim().toLowerCase() === adminUser.toLowerCase();
+    if (isValid) {
+        writeLog('INFO', `Username check passed for: "${username.trim()}" from IP: ${req.ip}`);
+        return res.json({ success: true, message: 'Username valid. Silakan masukkan password.' });
+    } else {
+        writeLog('WARN', `Username check failed: "${username.trim()}" from IP: ${req.ip}`);
+        return res.status(401).json({ success: false, message: 'Username tidak ditemukan.' });
+    }
+});
+
+// SECURE API: Admin Login (Step 2 — password verification with bcrypt + lockout)
+app.post('/api/login', loginLimiter, async (req, res) => {
+    const clientIp = req.ip;
     const { username, password } = req.body;
+    
+    // Input validation
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Username dan password wajib diisi' });
+    }
+    if (typeof password !== 'string' || password.length < 6 || password.length > 50) {
+        return res.status(400).json({ success: false, message: 'Password harus antara 6-50 karakter' });
+    }
+    
+    // Brute-force lockout check
+    const attemptData = loginAttempts.get(clientIp) || { count: 0, lockedUntil: null };
+    if (attemptData.lockedUntil && Date.now() < attemptData.lockedUntil) {
+        const remainingMinutes = Math.ceil((attemptData.lockedUntil - Date.now()) / 60000);
+        writeLog('WARN', `Blocked login attempt from locked IP: ${clientIp}. Remaining lockout: ${remainingMinutes} minutes.`);
+        return res.status(429).json({ 
+            success: false, 
+            message: `Terlalu banyak percobaan gagal. Akun terkunci ${remainingMinutes} menit lagi.` 
+        });
+    }
     
     // Server-Side Authentication using environment variables
     const adminUser = process.env.ADMIN_USERNAME;
-    const adminPass = process.env.ADMIN_PASSWORD;
+    const adminPass = process.env.ADMIN_PASSWORD;     // plaintext in .env
+    const adminPassHash = process.env.ADMIN_PASSWORD_HASH; // bcrypt hash (preferred)
     
-    if (!adminUser || !adminPass) {
+    if (!adminUser || (!adminPass && !adminPassHash)) {
         writeLog('ERROR', 'Admin credentials are not configured in environment variables');
         return res.status(500).json({ success: false, message: 'Autentikasi admin belum dikonfigurasi di server' });
     }
     
-    if (username === adminUser && password === adminPass) {
+    // Compare username first
+    if (username.trim().toLowerCase() !== adminUser.toLowerCase()) {
+        writeLog('WARN', `Failed admin login: wrong username "${username}" from IP: ${clientIp}`);
+        return res.status(401).json({ success: false, message: 'Username atau Password salah!' });
+    }
+    
+    // Compare password — prefer bcrypt hash, fallback to plaintext for backward compatibility
+    let passwordMatch = false;
+    if (adminPassHash) {
+        // Bcrypt comparison (recommended — asesmen requirement: algoritma enkripsi kuat)
+        passwordMatch = await bcrypt.compare(password, adminPassHash);
+    } else {
+        // Fallback: plaintext comparison (legacy, still supported)
+        passwordMatch = (password === adminPass);
+    }
+    
+    if (passwordMatch) {
+        // Reset failed attempts on successful login
+        loginAttempts.delete(clientIp);
+        
         // Generate secure cryptographically random session token
         const token = crypto.randomBytes(32).toString('hex');
-        activeSessions.add(token);
+        activeSessions.set(token, {
+            createdAt: Date.now(),
+            username: adminUser,
+            ipAddress: clientIp
+        });
         
-        writeLog('INFO', `Admin login successful. Session token generated.`);
-        res.json({ success: true, token: token });
+        // Invalidate all old sessions (force single session per admin)
+        // NOTE: for multi-admin, remove this block
+        for (const [existingToken, sessionData] of activeSessions.entries()) {
+            if (existingToken !== token && sessionData.username === adminUser) {
+                activeSessions.delete(existingToken);
+            }
+        }
+        
+        writeLog('INFO', `Admin login successful from IP: ${clientIp}. Session token generated.`);
+        res.json({ success: true, token: token, expiresIn: SESSION_DURATION_MS / 1000 });
     } else {
-        writeLog('WARN', `Failed admin login attempt using username: "${username}"`);
-        res.status(401).json({ success: false, message: 'Username atau Password salah!' });
+        // Increment failed attempt counter
+        attemptData.count = (attemptData.count || 0) + 1;
+        if (attemptData.count >= MAX_LOGIN_ATTEMPTS) {
+            attemptData.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+            writeLog('WARN', `IP ${clientIp} locked out after ${MAX_LOGIN_ATTEMPTS} failed login attempts.`);
+        }
+        loginAttempts.set(clientIp, attemptData);
+        
+        const remaining = MAX_LOGIN_ATTEMPTS - attemptData.count;
+        const message = remaining > 0 
+            ? `Username atau Password salah! Sisa percobaan: ${remaining}` 
+            : 'Terlalu banyak percobaan gagal. Akun terkunci 15 menit.';
+        
+        writeLog('WARN', `Failed admin login attempt #${attemptData.count} from IP: ${clientIp}`);
+        res.status(401).json({ success: false, message });
     }
 });
 
-// SECURE API: Admin logout
+// SECURE API: Admin Password Change
+app.post('/api/admin/change-password', authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        // Validation — password policy: 6-50 chars and complexity
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Password lama dan baru wajib diisi' });
+        }
+        if (newPassword.length < 6 || newPassword.length > 50) {
+            return res.status(400).json({ success: false, message: 'Password baru harus antara 6-50 karakter' });
+        }
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=\[\]{}|\\:";'<>?,.\/~`-])[A-Za-z\d@$!%*?&#^()_+=\[\]{}|\\:";'<>?,.\/~`-]{6,50}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Password baru harus mengandung minimal 1 huruf besar, 1 huruf kecil, 1 angka, dan 1 karakter spesial' 
+            });
+        }
+        if (currentPassword === newPassword) {
+            return res.status(400).json({ success: false, message: 'Password baru tidak boleh sama dengan password lama' });
+        }
+        
+        // Verify current password
+        const adminPass = process.env.ADMIN_PASSWORD;
+        const adminPassHash = process.env.ADMIN_PASSWORD_HASH;
+        
+        let currentPasswordValid = false;
+        if (adminPassHash) {
+            currentPasswordValid = await bcrypt.compare(currentPassword, adminPassHash);
+        } else {
+            currentPasswordValid = (currentPassword === adminPass);
+        }
+        
+        if (!currentPasswordValid) {
+            writeLog('WARN', 'Admin password change failed: current password incorrect');
+            return res.status(401).json({ success: false, message: 'Password lama tidak sesuai' });
+        }
+        
+        // Hash new password with bcrypt (cost factor 12)
+        const newHash = await bcrypt.hash(newPassword, 12);
+        
+        // Write new hash to .env file
+        const envPath = path.join(__dirname, '.env');
+        let envContent = fs.readFileSync(envPath, 'utf8');
+        
+        // Update or add ADMIN_PASSWORD_HASH
+        if (envContent.includes('ADMIN_PASSWORD_HASH=')) {
+            envContent = envContent.replace(/ADMIN_PASSWORD_HASH=.*/g, `ADMIN_PASSWORD_HASH=${newHash}`);
+        } else {
+            envContent += `\nADMIN_PASSWORD_HASH=${newHash}\n`;
+        }
+        
+        fs.writeFileSync(envPath, envContent);
+        process.env.ADMIN_PASSWORD_HASH = newHash;
+        
+        // Invalidate all existing sessions (force re-login after password change)
+        activeSessions.clear();
+        
+        writeLog('INFO', 'Admin password changed successfully. All sessions invalidated.');
+        res.json({ success: true, message: 'Password berhasil diubah. Silakan login kembali.' });
+        
+    } catch (err) {
+        writeLog('ERROR', `Error in POST /api/admin/change-password: ${err.message}`);
+        res.status(500).json({ success: false, message: 'Kesalahan internal server' });
+    }
+});
+
+// SECURE API: Admin logout (invalidates specific session token)
 app.post('/api/admin/logout', authenticateToken, (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -683,8 +1057,28 @@ app.post('/api/admin/logout', authenticateToken, (req, res) => {
     if (token) {
         activeSessions.delete(token);
     }
-    writeLog('INFO', 'Admin logout successful');
+    writeLog('INFO', `Admin logout successful from IP: ${req.ip}`);
     res.json({ success: true });
+});
+
+// SECURE API: Session status check
+app.get('/api/admin/session-status', authenticateToken, (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    const session = activeSessions.get(token);
+    
+    if (session) {
+        const elapsed = Date.now() - session.createdAt;
+        const remainingMs = SESSION_DURATION_MS - elapsed;
+        res.json({
+            success: true,
+            username: session.username,
+            loginTime: new Date(session.createdAt).toISOString(),
+            expiresInSeconds: Math.max(0, Math.floor(remainingMs / 1000))
+        });
+    } else {
+        res.status(401).json({ success: false, message: 'Sesi tidak ditemukan' });
+    }
 });
 
 // SECURE API: Get all reports (Requires session token validation)
@@ -787,6 +1181,40 @@ app.post('/api/admin/reports/reset', authenticateToken, async (req, res) => {
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+// Custom Error Handlers (prevent leaking technical info)
+app.use((req, res) => {
+    writeLog('WARN', `404 Not Found: ${req.method} ${req.url} from IP: ${req.ip}`);
+    res.status(404).json({ success: false, message: 'Halaman atau sumber daya tidak ditemukan (404)' });
+});
+
+app.use((err, req, res, next) => {
+    writeLog('ERROR', `Unhandled server error on ${req.method} ${req.url}: ${err.message}`);
+    // Do NOT expose stack trace or internal error details to client
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan pada server. Silakan hubungi administrator.' });
+});
+
+// Periodic cleanup of expired sessions and login attempt records
+setInterval(() => {
+    const now = Date.now();
+    let expiredSessions = 0;
+    for (const [token, session] of activeSessions.entries()) {
+        if (now - session.createdAt > SESSION_DURATION_MS) {
+            activeSessions.delete(token);
+            expiredSessions++;
+        }
+    }
+    if (expiredSessions > 0) {
+        writeLog('INFO', `Session cleanup: removed ${expiredSessions} expired session(s).`);
+    }
+    
+    // Clean up old login attempt records
+    for (const [ip, data] of loginAttempts.entries()) {
+        if (!data.lockedUntil || now > data.lockedUntil + LOCKOUT_DURATION_MS) {
+            loginAttempts.delete(ip);
+        }
+    }
+}, 30 * 60 * 1000); // Run every 30 minutes
 
 // Graceful shutdown: close database connection
 process.on('SIGINT', async () => {

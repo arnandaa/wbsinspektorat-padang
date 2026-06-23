@@ -1973,3 +1973,584 @@ input:checked + .slider:before {
 .admin-table th.sla-th {
     min-width: 140px;
 }
+
+/* ==========================================================================
+   SLA GUIDE PAGE STYLES
+   ========================================================================== */
+
+.sla-guide-section {
+    padding: var(--space-md) 0;
+}
+
+.sla-guide-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 2px solid var(--color-surface-border);
+}
+
+.sla-guide-header-icon {
+    width: 54px;
+    height: 54px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.6rem;
+    color: white;
+}
+
+.sla-guide-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.sla-guide-header p {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+/* Flowchart container */
+.sla-flowchart-container {
+    background: white;
+    border: 1px solid var(--color-surface-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-lg) var(--space-md);
+    margin-bottom: var(--space-lg);
+    overflow-x: auto;
+}
+
+.sla-flowchart-title {
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.sla-flowchart-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 600px;
+}
+
+/* Flowchart Nodes */
+.fc-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 640px;
+}
+
+.fc-box {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    box-shadow: var(--shadow-sm);
+    border: 2px solid transparent;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fc-box:hover {
+    transform: scale(1.01);
+    box-shadow: var(--shadow-md);
+}
+
+.fc-box-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.fc-box-content {
+    flex: 1;
+}
+
+.fc-box-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.15rem;
+}
+
+.fc-box-desc {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+.fc-box-sla {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,0.35);
+    white-space: nowrap;
+}
+
+/* Status-specific node colors */
+.fc-start { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; border-color: #1e40af; }
+.fc-diajukan { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; border-color: #f59e0b; }
+.fc-diverifikasi { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; border-color: #3b82f6; }
+.fc-ditindaklanjuti { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #3730a3; border-color: #6366f1; }
+.fc-selesai { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; border-color: #10b981; }
+.fc-ditolak { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; border-color: #ef4444; }
+.fc-end { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); color: #334155; border-color: #94a3b8; }
+
+/* Arrow connectors */
+.fc-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 4px 0;
+}
+
+.fc-arrow-line {
+    width: 2px;
+    height: 24px;
+    background: linear-gradient(to bottom, var(--color-primary), var(--color-accent));
+}
+
+.fc-arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 10px solid var(--color-accent);
+}
+
+.fc-arrow-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
+    background: var(--color-surface-dim);
+    padding: 0.1rem 0.5rem;
+    border-radius: var(--radius-full);
+}
+
+/* Branch (fork to selesai or ditolak) */
+.fc-branch {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    width: 100%;
+    max-width: 640px;
+    padding: var(--space-xs) 0;
+}
+
+.fc-branch-path {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.fc-branch-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--radius-full);
+    margin-bottom: 2px;
+}
+
+.fc-branch-label.approved { background: var(--color-success-bg); color: var(--color-success); }
+.fc-branch-label.rejected { background: var(--color-error-bg); color: var(--color-error); }
+
+/* SLA Summary Table */
+.sla-table-container {
+    background: white;
+    border: 1px solid var(--color-surface-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: var(--space-lg);
+}
+
+.sla-table-container h3 {
+    font-size: 1.05rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-surface-border);
+    background: var(--color-surface-dim);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.sla-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.sla-table th {
+    background: var(--color-primary);
+    color: white;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.sla-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-surface-border);
+    vertical-align: top;
+}
+
+.sla-table tr:last-child td { border-bottom: none; }
+
+.sla-table tr:hover td { background: var(--color-surface-dim); }
+
+.sla-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.sla-days-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+/* SLA Notes Cards */
+.sla-notes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.sla-note-card {
+    background: white;
+    border: 1px solid var(--color-surface-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-md);
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid;
+}
+
+.sla-note-card.blue { border-left-color: var(--color-info); }
+.sla-note-card.green { border-left-color: var(--color-success); }
+.sla-note-card.orange { border-left-color: var(--color-warning); }
+.sla-note-card.red { border-left-color: var(--color-error); }
+
+.sla-note-card h4 {
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.sla-note-card p {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN — MOBILE & TABLET MEDIA QUERIES
+   ========================================================================== */
+
+/* ── Tablet: max 1024px ─────────────────────────────── */
+@media (max-width: 1024px) {
+    .hero-container {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+
+    .hero-stats-card {
+        max-width: 480px;
+        margin: 0 auto;
+    }
+
+    .workflow-grid,
+    .violations-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .admin-dashboard-container {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        padding: var(--space-sm);
+    }
+
+    .admin-profile {
+        width: 100%;
+        margin-bottom: var(--space-sm);
+    }
+
+    .admin-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        flex: 1;
+    }
+
+    .admin-nav-item {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    .admin-logout-btn {
+        width: auto;
+        padding: 0.4rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .sla-notes-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Mobile: max 768px ──────────────────────────────── */
+@media (max-width: 768px) {
+    body {
+        font-size: 15px;
+    }
+
+    .header-container {
+        height: 60px;
+        padding: 0 var(--space-sm);
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .mobile-menu-toggle {
+        display: block;
+    }
+
+    .mobile-nav {
+        display: flex;
+    }
+
+    .mobile-nav.active {
+        display: flex;
+    }
+
+    .app-main {
+        padding-top: var(--space-lg);
+        padding-bottom: var(--space-lg);
+    }
+
+    .hero-title {
+        font-size: 1.7rem;
+    }
+
+    .hero-desc {
+        font-size: 0.95rem;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+    }
+
+    .hero-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .security-banner {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .banner-icon-container {
+        margin: 0 auto;
+    }
+
+    .workflow-grid,
+    .violations-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-sm);
+    }
+
+    .form-wrapper {
+        padding: 1.5rem var(--space-md);
+        border-radius: var(--radius-lg);
+    }
+
+    .form-grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .toggle-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+
+    .toggle-card .switch {
+        align-self: flex-end;
+    }
+
+    .track-input-group {
+        flex-direction: column;
+    }
+
+    .track-input-group input,
+    .track-input-group .btn-search {
+        width: 100%;
+    }
+
+    .results-header-card {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .timeline-steps {
+        gap: var(--space-md);
+    }
+
+    .timeline-step {
+        flex-direction: column;
+    }
+
+    .admin-detail-body {
+        flex-direction: column;
+    }
+
+    .admin-detail-col-left,
+    .admin-detail-col-right {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .workspace-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+
+    .workspace-actions {
+        align-self: flex-end;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-card-lg {
+        max-width: 100%;
+        margin: 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .modal-overlay {
+        align-items: flex-end;
+    }
+
+    .sla-guide-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .sla-flowchart-wrap {
+        min-width: 320px;
+    }
+
+    .sla-notes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-container {
+        flex-direction: column;
+        gap: var(--space-md);
+        text-align: center;
+    }
+
+    .footer-links {
+        text-align: center;
+    }
+}
+
+/* ── Small Mobile: max 480px ─────────────────────────── */
+@media (max-width: 480px) {
+    .header-container {
+        padding: 0 0.75rem;
+    }
+
+    .logo-subtitle {
+        display: none;
+    }
+
+    .hero-title {
+        font-size: 1.45rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+
+    .workflow-grid,
+    .violations-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.9rem;
+    }
+
+    .form-wrapper {
+        padding: 1.2rem 1rem;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+    }
+
+    .modal-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .modal-card-sm {
+        margin: var(--space-md) var(--space-sm);
+    }
+}
