@@ -5,7 +5,9 @@ node_modules/
 .env
 
 # Database files
-wbs_database.db
+*.db
+*.db-shm
+*.db-wal
 *.db-journal
 reports.json
 reports_backup.json

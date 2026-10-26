@@ -126,9 +126,12 @@ app.use((req, res, next) => {
 function writeLog(level, message) {
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] [${level}] ${message}\n`;
-    fs.appendFile(LOG_FILE, logMessage, (err) => {
-        if (err) console.error('Error writing to log file:', err);
-    });
+    // Only write to file when not running in serverless environment (e.g. Vercel)
+    if (!process.env.VERCEL) {
+        fs.appendFile(LOG_FILE, logMessage, (err) => {
+            if (err) console.error('Error writing to log file:', err);
+        });
+    }
     console.log(`[${level}] ${message}`);
 }
 
@@ -392,9 +395,13 @@ async function migrateFromJson() {
             
             // Rename reports.json if it exists to avoid running migration from it next time
             const oldJson = path.join(__dirname, 'reports.json');
-            if (fs.existsSync(oldJson)) {
-                fs.renameSync(oldJson, path.join(__dirname, 'reports_backup.json'));
-                writeLog('INFO', `Old reports.json renamed to reports_backup.json as backup.`);
+            if (!process.env.VERCEL && fs.existsSync(oldJson)) {
+                try {
+                    fs.renameSync(oldJson, path.join(__dirname, 'reports_backup.json'));
+                    writeLog('INFO', `Old reports.json renamed to reports_backup.json as backup.`);
+                } catch (fsErr) {
+                    writeLog('WARN', `Could not rename reports.json: ${fsErr.message}`);
+                }
             }
         } catch (txErr) {
             await client.query('ROLLBACK');
@@ -407,15 +414,42 @@ async function migrateFromJson() {
     }
 }
 
+// Database Startup & Serverless Readiness Helper
+let isDbInitialized = false;
+let dbInitPromise = null;
+
+function ensureDbInit() {
+    if (!dbInitPromise) {
+        dbInitPromise = (async () => {
+            await initDb();
+            await migrateFromJson();
+            isDbInitialized = true;
+        })();
+    }
+    return dbInitPromise;
+}
+
 // Database Startup IIFE
 (async () => {
     try {
-        await initDb();
-        await migrateFromJson();
+        await ensureDbInit();
     } catch (err) {
         writeLog('ERROR', `Database startup failed: ${formatError(err)}`);
     }
 })();
+
+// Serverless DB readiness middleware for /api/ routes
+app.use('/api/', async (req, res, next) => {
+    if (!isDbInitialized) {
+        try {
+            await ensureDbInit();
+        } catch (err) {
+            writeLog('ERROR', `Database not ready on ${req.method} ${req.url}: ${formatError(err)}`);
+            return res.status(500).json({ success: false, message: 'Database initialization error' });
+        }
+    }
+    next();
+});
 
 /* ==========================================================================
    DATABASE QUERY HELPERS
@@ -634,8 +668,48 @@ function validateReportInput(report) {
 }
 
 /* ==========================================================================
-   ACCESS CONTROL MIDDLEWARE
+   ACCESS CONTROL & SESSION VERIFICATION
+   Supports both in-memory map and HMAC-signed tokens for serverless resilience
    ========================================================================== */
+
+function verifyToken(token) {
+    if (!token) return null;
+    
+    // Check HMAC-signed token (resilient across serverless instances)
+    if (token.includes('.')) {
+        const parts = token.split('.');
+        if (parts.length === 2) {
+            const [payloadB64, signature] = parts;
+            const secret = process.env.SESSION_SECRET || 'wbs-padang-default-secret-key-change-in-env';
+            const expectedSig = crypto.createHmac('sha256', secret).update(payloadB64).digest('hex');
+            
+            if (signature.length === expectedSig.length && 
+                crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+                try {
+                    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+                    const now = Date.now();
+                    if (now - payload.t <= SESSION_DURATION_MS) {
+                        return { username: payload.u, createdAt: payload.t };
+                    }
+                } catch (e) {
+                    // Invalid payload
+                }
+            }
+        }
+    }
+    
+    // Fallback: check in-memory Map
+    const session = activeSessions.get(token);
+    if (session) {
+        const now = Date.now();
+        if (now - session.createdAt <= SESSION_DURATION_MS) {
+            return session;
+        } else {
+            activeSessions.delete(token);
+        }
+    }
+    return null;
+}
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -646,20 +720,13 @@ function authenticateToken(req, res, next) {
         return res.status(401).json({ success: false, message: 'Akses ditolak: Token tidak ditemukan' });
     }
     
-    const session = activeSessions.get(token);
+    const session = verifyToken(token);
     if (!session) {
         writeLog('WARN', `Access denied: Invalid session token used on ${req.method} ${req.url}`);
         return res.status(403).json({ success: false, message: 'Akses ditolak: Sesi tidak valid atau sudah berakhir' });
     }
     
-    // Session timeout check (8 hours)
-    const now = Date.now();
-    if (now - session.createdAt > SESSION_DURATION_MS) {
-        activeSessions.delete(token);
-        writeLog('INFO', `Session expired for admin user. Token removed.`);
-        return res.status(401).json({ success: false, message: 'Sesi telah berakhir. Silakan login kembali.' });
-    }
-    
+    req.adminUser = session.username;
     next();
 }
 
@@ -944,10 +1011,19 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         // Reset failed attempts on successful login
         loginAttempts.delete(clientIp);
         
-        // Generate secure cryptographically random session token
-        const token = crypto.randomBytes(32).toString('hex');
+        // Generate secure cryptographically random + HMAC-signed session token (works on serverless & local)
+        const secret = process.env.SESSION_SECRET || 'wbs-padang-default-secret-key-change-in-env';
+        const payloadObj = {
+            u: adminUser,
+            t: Date.now(),
+            r: crypto.randomBytes(16).toString('hex')
+        };
+        const payloadB64 = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+        const signature = crypto.createHmac('sha256', secret).update(payloadB64).digest('hex');
+        const token = `${payloadB64}.${signature}`;
+        
         activeSessions.set(token, {
-            createdAt: Date.now(),
+            createdAt: payloadObj.t,
             username: adminUser,
             ipAddress: clientIp
         });
@@ -1023,18 +1099,22 @@ app.post('/api/admin/change-password', authenticateToken, async (req, res) => {
         // Hash new password with bcrypt (cost factor 12)
         const newHash = await bcrypt.hash(newPassword, 12);
         
-        // Write new hash to .env file
+        // Write new hash to .env file if running locally
         const envPath = path.join(__dirname, '.env');
-        let envContent = fs.readFileSync(envPath, 'utf8');
-        
-        // Update or add ADMIN_PASSWORD_HASH
-        if (envContent.includes('ADMIN_PASSWORD_HASH=')) {
-            envContent = envContent.replace(/ADMIN_PASSWORD_HASH=.*/g, `ADMIN_PASSWORD_HASH=${newHash}`);
-        } else {
-            envContent += `\nADMIN_PASSWORD_HASH=${newHash}\n`;
+        if (!process.env.VERCEL && fs.existsSync(envPath)) {
+            try {
+                let envContent = fs.readFileSync(envPath, 'utf8');
+                // Update or add ADMIN_PASSWORD_HASH
+                if (envContent.includes('ADMIN_PASSWORD_HASH=')) {
+                    envContent = envContent.replace(/ADMIN_PASSWORD_HASH=.*/g, `ADMIN_PASSWORD_HASH=${newHash}`);
+                } else {
+                    envContent += `\nADMIN_PASSWORD_HASH=${newHash}\n`;
+                }
+                fs.writeFileSync(envPath, envContent);
+            } catch (fsErr) {
+                writeLog('WARN', `Could not update .env file: ${fsErr.message}`);
+            }
         }
-        
-        fs.writeFileSync(envPath, envContent);
         process.env.ADMIN_PASSWORD_HASH = newHash;
         
         // Invalidate all existing sessions (force re-login after password change)
@@ -1065,7 +1145,7 @@ app.post('/api/admin/logout', authenticateToken, (req, res) => {
 app.get('/api/admin/session-status', authenticateToken, (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    const session = activeSessions.get(token);
+    const session = verifyToken(token);
     
     if (session) {
         const elapsed = Date.now() - session.createdAt;
@@ -1229,7 +1309,11 @@ process.on('SIGTERM', async () => {
     process.exit(0);
 });
 
-// Start the server securely
-app.listen(PORT, () => {
-    writeLog('SYSTEM', `WBS Inspektorat Padang server is listening on port ${PORT} (PostgreSQL database)`);
-});
+// Start the server (when not running in Vercel serverless environment)
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        writeLog('SYSTEM', `WBS Inspektorat Padang server is listening on port ${PORT} (${pool.isPostgres ? 'PostgreSQL' : 'SQLite'} database)`);
+    });
+}
+
+module.exports = app;
