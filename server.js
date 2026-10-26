@@ -108,6 +108,7 @@ app.use((req, res, next) => {
 });
 
 // 5. Serve static frontend files safely
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
 // 6. HTTPS Redirect Middleware (if behind a proxy/load balancer in production)
@@ -1276,7 +1277,15 @@ app.post('/api/admin/reports/reset', authenticateToken, async (req, res) => {
 
 // Fallback to index.html for SPA routing
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ success: false, message: 'API endpoint tidak ditemukan' });
+    }
+    const publicIndex = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(publicIndex)) {
+        res.sendFile(publicIndex);
+    } else {
+        res.sendFile(path.join(__dirname, 'index.html'));
+    }
 });
 
 // Custom Error Handlers (prevent leaking technical info)
