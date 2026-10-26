@@ -195,18 +195,19 @@ function decryptData(encryptedText) {
    DATABASE CONFIGURATION & INITIALIZATION (PostgreSQL & SQLite)
    ========================================================================== */
 
-const usePostgres = !!process.env.DATABASE_URL;
+const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const usePostgres = !!postgresUrl;
 let dbAdapter;
 
 if (usePostgres) {
-    const sslConfig = process.env.DATABASE_URL && 
-                      !process.env.DATABASE_URL.includes('localhost') && 
-                      !process.env.DATABASE_URL.includes('127.0.0.1')
+    const sslConfig = postgresUrl && 
+                      !postgresUrl.includes('localhost') && 
+                      !postgresUrl.includes('127.0.0.1')
         ? { rejectUnauthorized: false }
         : false;
 
     const pgPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: postgresUrl,
         ssl: sslConfig
     });
 
@@ -216,8 +217,20 @@ if (usePostgres) {
         connect: () => pgPool.connect(),
         end: () => pgPool.end()
     };
+} else if (process.env.VERCEL) {
+    // Vercel serverless environment fallback when PostgreSQL is not yet connected
+    writeLog('WARN', 'DATABASE_URL / POSTGRES_URL belum disetel di Vercel. Database berjalan dalam mode aman (non-crash).');
+    dbAdapter = {
+        isPostgres: false,
+        query: async () => ({ rows: [] }),
+        connect: async () => ({
+            query: async () => ({ rows: [] }),
+            release: () => {}
+        }),
+        end: async () => {}
+    };
 } else {
-    // SQLite local fallback
+    // SQLite local fallback (for local offline development only)
     const sqlite3 = require('sqlite3').verbose();
     const sqliteDb = new sqlite3.Database(path.join(__dirname, 'wbs_database.db'));
 
@@ -260,9 +273,11 @@ if (usePostgres) {
     };
 }
 
-const pool = dbAdapter;
-
 async function initDb() {
+    if (process.env.VERCEL && !pool.isPostgres) {
+        writeLog('SYSTEM', 'Aplikasi berjalan di Vercel tanpa database PostgreSQL. Harap sambungkan Vercel Postgres atau masukkan DATABASE_URL.');
+        return;
+    }
     const client = await pool.connect();
     try {
         const idType = pool.isPostgres ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
@@ -1275,7 +1290,7 @@ app.use((err, req, res, next) => {
 });
 
 // Periodic cleanup of expired sessions and login attempt records
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
     const now = Date.now();
     let expiredSessions = 0;
     for (const [token, session] of activeSessions.entries()) {
@@ -1295,6 +1310,7 @@ setInterval(() => {
         }
     }
 }, 30 * 60 * 1000); // Run every 30 minutes
+if (cleanupTimer.unref) cleanupTimer.unref();
 
 // Graceful shutdown: close database connection
 process.on('SIGINT', async () => {
