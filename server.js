@@ -335,6 +335,8 @@ async function initDb() {
    ========================================================================== */
 
 async function migrateFromJson() {
+    if (!pool.isPostgres) return;
+    
     let jsonPath = path.join(__dirname, 'reports.json');
     if (!fs.existsSync(jsonPath)) {
         jsonPath = path.join(__dirname, 'reports_backup.json');
