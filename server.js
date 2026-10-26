@@ -195,7 +195,7 @@ function decryptData(encryptedText) {
    DATABASE CONFIGURATION & INITIALIZATION (PostgreSQL & SQLite)
    ========================================================================== */
 
-const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.STORAGE_URL;
 const usePostgres = !!postgresUrl;
 let dbAdapter;
 
