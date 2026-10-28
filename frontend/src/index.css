@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0B192C;
+  --color-primary-navy: #0B192C;
+  --color-navy-structural: #1E3E62;
+  --color-accent-maroon: #8B181B;
+  --color-accent-gold: #D97706;
+  --color-surface: #ffffff;
+  --color-surface-dim: #f8fafc;
+  --color-surface-border: #e2e8f0;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --font-heading: 'Plus Jakarta Sans', 'Public Sans', sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+/* ==========================================================================
+   ADMIN DASHBOARD SMOOTH STAGGERED ANIMATIONS (Slide Up + Fade In)
+   ========================================================================== */
+@keyframes adminSlideUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-admin-slide-up {
+  animation: adminSlideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 90ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 220ms; }
+.stagger-5 { animation-delay: 300ms; }
+.stagger-6 { animation-delay: 380ms; }
+
+

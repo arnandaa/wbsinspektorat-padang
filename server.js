@@ -198,6 +198,7 @@ function decryptData(encryptedText) {
 
 const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.STORAGE_URL;
 const usePostgres = !!postgresUrl;
+let pool;
 let dbAdapter;
 
 if (usePostgres) {
@@ -212,7 +213,7 @@ if (usePostgres) {
         ssl: sslConfig
     });
 
-    dbAdapter = {
+    pool = {
         isPostgres: true,
         query: (text, params) => pgPool.query(text, params),
         connect: () => pgPool.connect(),
@@ -221,7 +222,7 @@ if (usePostgres) {
 } else if (process.env.VERCEL) {
     // Vercel serverless environment fallback when PostgreSQL is not yet connected
     writeLog('WARN', 'DATABASE_URL / POSTGRES_URL belum disetel di Vercel. Database berjalan dalam mode aman (non-crash).');
-    dbAdapter = {
+    pool = {
         isPostgres: false,
         query: async () => ({ rows: [] }),
         connect: async () => ({
@@ -254,7 +255,7 @@ if (usePostgres) {
         });
     };
 
-    dbAdapter = {
+    pool = {
         isPostgres: false,
         query: (text, params) => sqliteQuery(text, params),
         connect: async () => {
@@ -273,6 +274,7 @@ if (usePostgres) {
         }
     };
 }
+dbAdapter = pool;
 
 async function initDb() {
     if (process.env.VERCEL && !pool.isPostgres) {
