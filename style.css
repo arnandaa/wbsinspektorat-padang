@@ -320,6 +320,21 @@ a:hover {
     gap: var(--space-xl);
     align-items: center;
     margin-bottom: var(--space-xl);
+    background: linear-gradient(135deg, #0B192C 0%, #1E3E62 100%);
+    color: #ffffff;
+    padding: 2.5rem 2.75rem;
+    border-radius: var(--radius-xxl);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 80% at 100% 0%, rgba(217, 119, 6, 0.18), transparent 55%);
+    pointer-events: none;
 }
 
 .badge-new {
@@ -337,16 +352,36 @@ a:hover {
 
 .hero-title {
     font-size: 2.3rem;
-    line-height: 1.2;
+    line-height: 1.15;
     margin-bottom: var(--space-sm);
     font-weight: 800;
+    color: #ffffff;
+    position: relative;
+    z-index: 1;
 }
 
 .hero-desc {
     font-size: 1.05rem;
-    color: var(--color-text-muted);
+    color: rgba(255, 255, 255, 0.82);
     margin-bottom: var(--space-md);
     font-weight: 400;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.badge-new {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-actions {
+    position: relative;
+    z-index: 1;
 }
 
 .hero-actions {
@@ -770,8 +805,8 @@ input:checked + .slider:before {
 
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+    border-color: var(--color-gold);
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.18);
 }
 
 /* File Upload drag/drop styling */
@@ -790,8 +825,8 @@ input:checked + .slider:before {
 }
 
 .file-upload-zone:hover {
-    border-color: var(--color-primary);
-    background-color: rgba(30, 58, 138, 0.02);
+    border-color: var(--color-gold);
+    background-color: rgba(217, 119, 6, 0.04);
 }
 
 .file-input {
@@ -1722,7 +1757,7 @@ input:checked + .slider:before {
     color: rgba(255, 255, 255, 0.75);
     padding-top: var(--space-lg);
     padding-bottom: var(--space-md);
-    border-top: 3px solid var(--color-accent); /* Golden ratio top border accent */
+    border-top: 3px solid var(--color-gold); /* Seal Gold accent */
     font-size: 0.85rem;
 }
 
