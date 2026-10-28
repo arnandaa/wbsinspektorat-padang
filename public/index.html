@@ -39,7 +39,6 @@
                 <a href="#" class="nav-item active" id="nav-home" onclick="navigateTo('home')">Beranda</a>
                 <a href="#" class="nav-item" id="nav-report" onclick="navigateTo('report')">Buat Aduan</a>
                 <a href="#" class="nav-item" id="nav-track" onclick="navigateTo('track')">Lacak Laporan</a>
-                <a href="#" class="nav-item" id="nav-admin" onclick="openAdminPortal()">Admin Area</a>
             </nav>
             
             <!-- Mobile Menu Toggle -->
@@ -57,7 +56,6 @@
             <a href="#" class="mobile-nav-item" onclick="navigateTo('home'); toggleMobileMenu()">Beranda</a>
             <a href="#" class="mobile-nav-item" onclick="navigateTo('report'); toggleMobileMenu()">Buat Aduan</a>
             <a href="#" class="mobile-nav-item" onclick="navigateTo('track'); toggleMobileMenu()">Lacak Laporan</a>
-            <a href="#" class="mobile-nav-item" onclick="openAdminPortal(); toggleMobileMenu()">Admin Area</a>
         </div>
     </header>
 
@@ -68,17 +66,12 @@
         <section id="section-home" class="app-section active-section">
             <div class="hero-container">
                 <div class="hero-content">
-                    <div class="badge-new">Portal Whistleblowing System Resmi</div>
-                    <h1 class="hero-title">Wujudkan Pemerintahan Kota Padang Bersih & Berintegritas</h1>
-                    <p class="hero-desc">Mendengar, Menjaga, Menindaklanjuti. Laporkan tindakan pelanggaran, korupsi, pungutan liar, atau gratifikasi yang terjadi di lingkungan Pemerintah Kota Padang secara aman dan terlindungi.</p>
+                    <h1 class="hero-title"><span class="ink-light">WBS</span><br><span class="ink-dark">Padang</span></h1>
+                    <p class="hero-desc">Laporkan pelanggaran, korupsi, pungli dan gratifikasi di lingkungan Pemerintah Kota Padang secara aman dan terlindungi.</p>
                     <div class="hero-actions">
                         <button class="btn btn-primary btn-lg" onclick="navigateTo('report')">
-                            Buat Laporan Baru
+                            Buat Laporan
                             <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                        </button>
-                        <button class="btn btn-secondary btn-lg" onclick="navigateTo('track')">
-                            Lacak Laporan
-                            <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         </button>
                     </div>
                 </div>
@@ -89,7 +82,7 @@
                             <h3>Statistik Laporan WBS</h3>
                             <span class="pulse-dot"></span>
                         </div>
-                        <p class="stats-subtitle">Data diperbarui secara real-time</p>
+                        
                         
                         <div class="stats-grid">
                             <div class="stat-item">
@@ -129,6 +122,7 @@
                 </div>
             </div>
 
+<figure style="margin:0;"><img src="assets/kota-padang-indah.jpg" width="1920" height="1144" alt="Pemandangan Kota Padang dari Gunung Padang" decoding="async" style="width:100%;height:auto;display:block;"></figure>
             <!-- INFOGRAPHICS / HOW IT WORKS -->
             <div class="workflow-section">
                 <h2 class="section-title text-center">Bagaimana Cara Kerja WBS?</h2>
@@ -136,49 +130,42 @@
                 
                 <div class="workflow-grid">
                     <div class="workflow-card">
-                        <div class="step-num">01</div>
                         <h3>Kirim Aduan</h3>
                         <p>Isi formulir pengaduan secara anonim atau dengan data diri secara jujur dan lampirkan bukti pendukung.</p>
                     </div>
                     <div class="workflow-card">
-                        <div class="step-num">02</div>
                         <h3>Dapatkan Token</h3>
                         <p>Simpan Token Aduan unik yang digenerate oleh sistem untuk melacak perkembangan status laporan Anda.</p>
                     </div>
                     <div class="workflow-card">
-                        <div class="step-num">03</div>
                         <h3>Pemeriksaan Internal</h3>
                         <p>Inspektorat meneliti kelayakan laporan dan melakukan verifikasi lapangan serta investigasi mendalam.</p>
                     </div>
                     <div class="workflow-card">
-                        <div class="step-num">04</div>
                         <h3>Tindak Lanjut & Selesai</h3>
                         <p>Laporan yang terbukti ditindaklanjuti secara disiplin/hukum, dan pelapor menerima hasil laporan via halaman Lacak.</p>
                     </div>
                 </div>
             </div>
 
+            <figure style="margin:0;"><img src="assets/traditional-market-in-padang-west-sumatra-indonesia.jpg" width="1920" height="1440" alt="Pasar tradisional di Kota Padang" decoding="async" style="width:100%;height:auto;display:block;"></figure>
             <!-- TYPES OF VIOLATIONS -->
             <div class="violations-section">
                 <h2 class="section-title text-center">Jenis Pelanggaran yang Dapat Dilaporkan</h2>
                 <div class="violations-grid">
                     <div class="violation-card">
-                        <div class="violation-icon">⚖️</div>
                         <h3>Tindakan Korupsi</h3>
                         <p>Penyalahgunaan uang negara atau fasilitas daerah demi keuntungan pribadi atau golongan tertentu.</p>
                     </div>
                     <div class="violation-card">
-                        <div class="violation-icon">💸</div>
                         <h3>Pungutan Liar (Pungli)</h3>
                         <p>Permintaan biaya di luar ketentuan resmi pada pelayanan publik atau perizinan daerah.</p>
                     </div>
                     <div class="violation-card">
-                        <div class="violation-icon">🎁</div>
                         <h3>Gratifikasi</h3>
                         <p>Penerimaan hadiah, janji, atau fasilitas oleh ASN yang berhubungan dengan jabatan atau kewenangannya.</p>
                     </div>
                     <div class="violation-card">
-                        <div class="violation-icon">🤝</div>
                         <h3>Benturan Kepentingan</h3>
                         <p>Situasi di mana ASN mengambil keputusan dengan adanya kepentingan pribadi atau keluarga.</p>
                     </div>
@@ -186,6 +173,7 @@
             </div>
         </section>
 
+        <figure style="margin:0;"><img src="assets/city-river-in-padang-west-sumatra-indonesia.jpg" width="1920" height="1440" alt="Sungai di Kota Padang dengan latar pegunungan" decoding="async" style="width:100%;height:auto;display:block;"></figure>
         <!-- 2. REPORT FORM SECTION -->
         <section id="section-report" class="app-section">
             <div class="form-wrapper">
@@ -302,6 +290,7 @@
             </div>
         </section>
 
+        <figure style="margin:0;"><img src="assets/piai-tangah-pauh-padang-01.jpg" width="1920" height="2560" alt="Lanskap persawahan di Padang" decoding="async" style="width:100%;height:auto;display:block;"></figure>
         <!-- 3. TRACK REPORT SECTION -->
         <section id="section-track" class="app-section">
             <div class="track-wrapper">
@@ -473,12 +462,12 @@
                             <span class="badge badge-red" id="admin-badge-ditolak">0</span>
                         </a>
                         <!-- Divider -->
-                        <div style="height:1px; background:var(--color-surface-border); margin: var(--space-xs) 0;"></div>
+                        <div style="height: 0; background:var(--color-surface-border); margin: var(--space-xs) 0;"></div>
                         <a href="#" class="admin-nav-item" id="admin-nav-sla-guide" onclick="showAdminSLAGuide()">
-                            <span>📋 Panduan SLA</span>
+                            <span> Panduan SLA</span>
                         </a>
                         <a href="#" class="admin-nav-item" id="admin-nav-change-password" onclick="showAdminChangePassword()">
-                            <span>🔑 Ganti Password</span>
+                            <span> Ganti Password</span>
                         </a>
                     </nav>
                     
@@ -569,7 +558,7 @@
                     <div id="admin-sla-guide" style="display:none;">
                         <div class="sla-guide-section">
                             <div class="sla-guide-header">
-                                <div class="sla-guide-header-icon">📋</div>
+                                <div class="sla-guide-header-icon"></div>
                                 <div>
                                     <h2>Panduan SLA Penanganan Pengaduan WBS</h2>
                                     <p>Service Level Agreement — standar batas waktu penanganan setiap tahapan laporan Whistleblowing System Inspektorat Kota Padang</p>
@@ -578,13 +567,13 @@
 
                             <!-- FLOWCHART -->
                             <div class="sla-flowchart-container">
-                                <div class="sla-flowchart-title">🔄 Alur Proses Penanganan Laporan WBS</div>
+                                <div class="sla-flowchart-title"> Alur Proses Penanganan Laporan WBS</div>
                                 <div class="sla-flowchart-wrap">
 
                                     <!-- START -->
                                     <div class="fc-node">
                                         <div class="fc-box fc-start">
-                                            <div class="fc-box-icon">📬</div>
+                                            <div class="fc-box-icon"></div>
                                             <div class="fc-box-content">
                                                 <div class="fc-box-title">Laporan Masuk dari Pelapor</div>
                                                 <div class="fc-box-desc">Pelapor mengisi formulir & mendapat token unik (WBS-PDG-YYYYMMDD-XXXXXX). Identitas dienkripsi AES-256.</div>
@@ -601,7 +590,7 @@
                                     <!-- DIAJUKAN -->
                                     <div class="fc-node">
                                         <div class="fc-box fc-diajukan">
-                                            <div class="fc-box-icon">📥</div>
+                                            <div class="fc-box-icon"></div>
                                             <div class="fc-box-content">
                                                 <div class="fc-box-title">Status: DIAJUKAN</div>
                                                 <div class="fc-box-desc">Laporan diterima sistem. Admin mendapat notifikasi Telegram otomatis. Perlu diverifikasi maksimal 1 hari kerja.</div>
@@ -619,7 +608,7 @@
                                     <!-- DIVERIFIKASI -->
                                     <div class="fc-node">
                                         <div class="fc-box fc-diverifikasi">
-                                            <div class="fc-box-icon">🔍</div>
+                                            <div class="fc-box-icon"></div>
                                             <div class="fc-box-content">
                                                 <div class="fc-box-title">Status: DIVERIFIKASI</div>
                                                 <div class="fc-box-desc">Inspektorat meninjau keabsahan laporan, memeriksa bukti, dan berkomunikasi dengan pelapor jika perlu. Harus diselesaikan dalam 6 hari kerja.</div>
@@ -637,7 +626,7 @@
                                     <!-- DITINDAKLANJUTI -->
                                     <div class="fc-node">
                                         <div class="fc-box fc-ditindaklanjuti">
-                                            <div class="fc-box-icon">🏛️</div>
+                                            <div class="fc-box-icon">️</div>
                                             <div class="fc-box-content">
                                                 <div class="fc-box-title">Status: DITINDAKLANJUTI</div>
                                                 <div class="fc-box-desc">Tim pemeriksa melakukan investigasi lapangan, pengumpulan data, dan auditing. Batas penyelesaian 14 hari kerja dari tanggal penindaklanjutan.</div>
@@ -653,9 +642,9 @@
                                                 <div class="fc-arrow-line"></div>
                                                 <div class="fc-arrow-head"></div>
                                             </div>
-                                            <div class="fc-branch-label approved">✅ TERBUKTI / LAYAK DITUTUP</div>
+                                            <div class="fc-branch-label approved"> TERBUKTI / LAYAK DITUTUP</div>
                                             <div class="fc-box fc-selesai" style="max-width:280px;">
-                                                <div class="fc-box-icon">✅</div>
+                                                <div class="fc-box-icon"></div>
                                                 <div class="fc-box-content">
                                                     <div class="fc-box-title">Status: SELESAI</div>
                                                     <div class="fc-box-desc">Kasus ditutup dengan catatan hasil pemeriksaan. Tindakan hukum/disiplin diambil jika terbukti. Pelapor mendapat update akhir.</div>
@@ -667,9 +656,9 @@
                                                 <div class="fc-arrow-line"></div>
                                                 <div class="fc-arrow-head"></div>
                                             </div>
-                                            <div class="fc-branch-label rejected">❌ TIDAK MEMENUHI SYARAT</div>
+                                            <div class="fc-branch-label rejected"> TIDAK MEMENUHI SYARAT</div>
                                             <div class="fc-box fc-ditolak" style="max-width:280px;">
-                                                <div class="fc-box-icon">❌</div>
+                                                <div class="fc-box-icon"></div>
                                                 <div class="fc-box-content">
                                                     <div class="fc-box-title">Status: DITOLAK</div>
                                                     <div class="fc-box-desc">Laporan ditutup karena tidak memenuhi syarat, tidak cukup bukti, atau di luar kewenangan Inspektorat.</div>
@@ -683,7 +672,7 @@
 
                             <!-- SLA TABLE -->
                             <div class="sla-table-container">
-                                <h3>📊 Tabel Ringkasan Batas Waktu SLA per Tahapan</h3>
+                                <h3> Tabel Ringkasan Batas Waktu SLA per Tahapan</h3>
                                 <div class="table-responsive">
                                     <table class="sla-table">
                                         <thead>
@@ -697,35 +686,35 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><span class="sla-status-pill" style="background:#fef3c7;color:#92400e;">📥 Diajukan</span></td>
+                                                <td><span class="sla-status-pill" style="background:#fef3c7;color:#92400e;"> Diajukan</span></td>
                                                 <td>Pelapor berhasil mengirim laporan via formulir</td>
                                                 <td><span class="sla-days-badge">1 Hari Kerja</span></td>
                                                 <td>Admin melakukan verifikasi awal, baca laporan, dan ubah status ke <em>Diverifikasi</em></td>
-                                                <td>🔴 Merah — jika belum diverifikasi dalam 1 hari kerja sejak laporan masuk</td>
+                                                <td> Merah — jika belum diverifikasi dalam 1 hari kerja sejak laporan masuk</td>
                                             </tr>
                                             <tr>
-                                                <td><span class="sla-status-pill" style="background:#dbeafe;color:#1e40af;">🔍 Diverifikasi</span></td>
+                                                <td><span class="sla-status-pill" style="background:#dbeafe;color:#1e40af;"> Diverifikasi</span></td>
                                                 <td>Admin mengubah status dari Diajukan ke Diverifikasi</td>
                                                 <td><span class="sla-days-badge">6 Hari Kerja</span></td>
                                                 <td>Inspektorat menyelesaikan telaah &amp; memutuskan apakah laporan layak ditindaklanjuti</td>
-                                                <td>🔴 Merah — jika telaah melebihi 6 hari kerja dari tanggal verifikasi</td>
+                                                <td> Merah — jika telaah melebihi 6 hari kerja dari tanggal verifikasi</td>
                                             </tr>
                                             <tr>
-                                                <td><span class="sla-status-pill" style="background:#e0e7ff;color:#3730a3;">🏛️ Ditindaklanjuti</span></td>
+                                                <td><span class="sla-status-pill" style="background:#e0e7ff;color:#3730a3;">️ Ditindaklanjuti</span></td>
                                                 <td>Admin mengubah status ke Ditindaklanjuti</td>
                                                 <td><span class="sla-days-badge">14 Hari Kerja</span></td>
                                                 <td>Tim pemeriksa menyelesaikan investigasi lapangan &amp; menyiapkan laporan hasil pemeriksaan akhir</td>
-                                                <td>🔴 Merah — jika penyelesaian melebihi 14 hari kerja dari tanggal penindaklanjutan</td>
+                                                <td> Merah — jika penyelesaian melebihi 14 hari kerja dari tanggal penindaklanjutan</td>
                                             </tr>
                                             <tr>
-                                                <td><span class="sla-status-pill" style="background:#d1fae5;color:#065f46;">✅ Selesai</span></td>
+                                                <td><span class="sla-status-pill" style="background:#d1fae5;color:#065f46;"> Selesai</span></td>
                                                 <td>Admin menutup kasus setelah investigasi selesai</td>
                                                 <td><span class="sla-days-badge">Tuntas</span></td>
                                                 <td>Kasus ditutup resmi. Laporan hasil tersedia. Tindakan disiplin/hukum diambil jika terbukti.</td>
                                                 <td>— (tidak ada batas)</td>
                                             </tr>
                                             <tr>
-                                                <td><span class="sla-status-pill" style="background:#fee2e2;color:#991b1b;">❌ Ditolak</span></td>
+                                                <td><span class="sla-status-pill" style="background:#fee2e2;color:#991b1b;"> Ditolak</span></td>
                                                 <td>Admin menolak laporan karena tidak memenuhi syarat</td>
                                                 <td><span class="sla-days-badge">Ditutup</span></td>
                                                 <td>Laporan ditutup dengan alasan penolakan yang tercatat dan tersampaikan kepada pelapor</td>
@@ -739,19 +728,19 @@
                             <!-- NOTES CARDS -->
                             <div class="sla-notes-grid">
                                 <div class="sla-note-card blue">
-                                    <h4>🔐 Enkripsi Identitas AES-256-GCM</h4>
+                                    <h4> Enkripsi Identitas AES-256-GCM</h4>
                                     <p>Seluruh data identitas pelapor (Nama, NIK, Email, No. HP) dienkripsi menggunakan algoritma AES-256-GCM sebelum tersimpan di database. Kunci enkripsi disimpan terpisah di server. Hanya Admin yang dapat mendekripsi data tersebut.</p>
                                 </div>
                                 <div class="sla-note-card green">
-                                    <h4>🎫 Nomor Tiket Unik Kriptografis</h4>
+                                    <h4> Nomor Tiket Unik Kriptografis</h4>
                                     <p>Setiap laporan mendapatkan token unik format <strong>WBS-PDG-YYYYMMDD-XXXXXX</strong> yang dibuat menggunakan <code>crypto.getRandomValues()</code> browser — jauh lebih aman dari random biasa. Token ini digunakan pelapor untuk melacak status kapan saja 24/7.</p>
                                 </div>
                                 <div class="sla-note-card orange">
-                                    <h4>⚠️ Indikator Warna Badge SLA</h4>
+                                    <h4>️ Indikator Warna Badge SLA</h4>
                                     <p>Sistem otomatis menghitung sisa hari kerja menuju batas SLA. Badge <span style="color:#10b981;font-weight:700;">HIJAU</span> = tepat waktu, <span style="color:#f59e0b;font-weight:700;">KUNING</span> = jatuh tempo hari ini, <span style="color:#ef4444;font-weight:700;">MERAH</span> = sudah terlambat. Lihat di kolom "Batas SLA" pada tabel pengaduan.</p>
                                 </div>
                                 <div class="sla-note-card red">
-                                    <h4>📱 Aksesibilitas 24/7 Browser &amp; Mobile</h4>
+                                    <h4> Aksesibilitas 24/7 Browser &amp; Mobile</h4>
                                     <p>Sistem WBS ini dapat diakses kapan saja, 24 jam sehari 7 hari seminggu, melalui browser desktop maupun perangkat mobile (smartphone &amp; tablet). Tampilan responsif penuh dengan breakpoint 1024px, 768px, dan 480px.</p>
                                 </div>
                             </div>
@@ -761,9 +750,9 @@
 
                     <!-- ADMIN CHANGE PASSWORD SECTION -->
                     <div id="admin-change-password-section" style="display:none; padding: var(--space-lg) var(--space-md);">
-                        <div class="form-wrapper" style="max-width: 500px; margin: 0 auto; padding: var(--space-md); background: var(--color-surface-card); border-radius: var(--border-radius-lg); border: 1px solid var(--color-surface-border); box-shadow: var(--shadow-sm);">
+                        <div class="form-wrapper" style="max-width: 500px; margin: 0 auto; padding: var(--space-md); background: var(--color-surface-card); border-radius: var(--border-radius-lg); border: 1px solid var(--color-surface-border); ">
                             <div class="form-header" style="margin-bottom: var(--space-md);">
-                                <h2 style="color: var(--color-primary); font-family: var(--font-heading); margin-bottom: var(--space-xs);">🔑 Ubah Password Admin</h2>
+                                <h2 style="color: var(--color-primary); font-family: var(--font-heading); margin-bottom: var(--space-xs);"> Ubah Password Admin</h2>
                                 <p style="font-size: 0.875rem; color: var(--color-text-muted);">Silakan masukkan password lama Anda dan tentukan password baru yang aman.</p>
                             </div>
                             <form id="admin-change-password-form" onsubmit="changeAdminPassword(event)">
@@ -802,20 +791,21 @@
                 <p>Email: <a href="mailto:inspektorat@padang.go.id">inspektorat@padang.go.id</a> | Telp: (0751) 461011</p>
                 <p style="margin-top: var(--space-xs);">
                     Hubungi kami: 
-                    <a href="https://wa.me/628117180117" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent); font-weight: 600; text-decoration: underline;">🟢 WhatsApp (08117180117)</a> | 
-                    <a href="https://instagram.com/inspektoratpdg" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent); font-weight: 600; text-decoration: underline;">📸 Instagram (@inspektoratpdg)</a>
+                    <a href="https://wa.me/628117180117" target="_blank" rel="noopener noreferrer" style="color: var(--color-gold); font-weight: 600; text-decoration: underline;"> WhatsApp (08117180117)</a> | 
+                    <a href="https://instagram.com/inspektoratpdg" target="_blank" rel="noopener noreferrer" style="color: var(--color-gold); font-weight: 600; text-decoration: underline;"> Instagram (@inspektoratpdg)</a>
                 </p>
             </div>
             <div class="footer-links">
                 <a href="#" onclick="navigateTo('home')">Beranda</a> • 
                 <a href="#" onclick="navigateTo('report')">Buat Aduan</a> • 
                 <a href="#" onclick="navigateTo('track')">Lacak Laporan</a> • 
-                <a href="#" onclick="openAdminPortal()">Admin Area</a>
+                <a href="#" id="nav-admin" onclick="openAdminPortal()">Admin Area</a>
             </div>
         </div>
         <div class="footer-bottom">
             <p>&copy; 2026 Inspektorat Kota Padang. Hak Cipta Dilindungi Undang-Undang.</p>
         </div>
+    <p class="credits" style="color:#ffffff; margin:0 24px;">Pictures: <a href="https://commons.wikimedia.org/wiki/File:Kota_Padang_Indah.jpg">“Kota Padang Indah”</a> by Zhilal Darma, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>, via Wikimedia Commons; <a href="https://commons.wikimedia.org/wiki/File:Traditional_Market_in_Padang,_West_Sumatra,_Indonesia.jpg">“Traditional Market in Padang, West Sumatra, Indonesia”</a> by Undeka 11, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>, via Wikimedia Commons; <a href="https://commons.wikimedia.org/wiki/File:City_River_in_Padang_West_Sumatra_Indonesia_with_Green_Water_and_Mountain_View.jpg">“City River in Padang West Sumatra Indonesia with Green Water and Mountain View”</a> by Undeka 11, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>, via Wikimedia Commons; <a href="https://commons.wikimedia.org/wiki/File:Piai_Tangah_-_Pauh_-_Padang_01.jpg">“Piai Tangah - Pauh - Padang 01”</a> by Anak Sago, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>, via Wikimedia Commons.</p>
     </footer>
 
     <!-- MODAL 1: NOTIFICATION SUCCESS COMPLAINT -->

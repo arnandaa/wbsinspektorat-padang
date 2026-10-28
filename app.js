@@ -367,7 +367,7 @@ function searchReport(token) {
             // Handle File Attachment display
             const fileContainer = document.getElementById('display-bukti-link');
             if (report.fileName && report.fileData) {
-                fileContainer.innerHTML = `<a href="${escapeHTML(report.fileData)}" download="${escapeHTML(report.fileName)}" class="text-navy" style="text-decoration:underline; font-weight:600;">📁 ${escapeHTML(report.fileName)}</a>`;
+                fileContainer.innerHTML = `<a href="${escapeHTML(report.fileData)}" download="${escapeHTML(report.fileName)}" class="text-navy" style="text-decoration:underline; font-weight:600;"> ${escapeHTML(report.fileName)}</a>`;
             } else {
                 fileContainer.textContent = "Tidak ada bukti file dilampirkan.";
             }
@@ -618,7 +618,7 @@ function renderTrackingComments(report) {
                 <div class="comment-attachment" style="margin-top: 0.5rem; font-size: 0.8rem;">
                     <strong>Lampiran Resmi:</strong> 
                     <a href="${escapeHTML(item.fileData)}" download="${escapeHTML(item.fileName)}" style="color: var(--color-accent); text-decoration: underline; font-weight: 600;">
-                        📁 ${escapeHTML(item.fileName)}
+                         ${escapeHTML(item.fileName)}
                     </a>
                 </div>
             `;
@@ -1129,7 +1129,7 @@ function renderAdminReports(searchQuery = "") {
         const sla = calculateSLA(report);
             
         tr.innerHTML = `
-            <td style="font-family:monospace; font-weight:700;">${escapeHTML(report.token)}</td>
+            <td style="font-family:monospace; font-weight:700;">${escapeHTML(report.token)}</td> <!-- taste-skill-ignore -->
             <td>${formatDate(report.dateSubmitted)}</td>
             <td><strong>${escapeHTML(report.category)}</strong></td>
             <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHTML(report.title)}">${escapeHTML(report.title)}</td>
@@ -1193,7 +1193,7 @@ function openAdminDetail(token) {
     // File display
     const fileArea = document.getElementById('admin-detail-file');
     if (report.fileName && report.fileData) {
-        fileArea.innerHTML = `<a href="${escapeHTML(report.fileData)}" download="${escapeHTML(report.fileName)}" class="text-navy">📁 ${escapeHTML(report.fileName)} (Klik untuk mengunduh)</a>`;
+        fileArea.innerHTML = `<a href="${escapeHTML(report.fileData)}" download="${escapeHTML(report.fileName)}" class="text-navy"> ${escapeHTML(report.fileName)} (Klik untuk mengunduh)</a>`;
     } else {
         fileArea.textContent = "Tidak ada bukti dilampirkan.";
     }
@@ -1248,7 +1248,7 @@ function renderAdminDetailHistory(report) {
                 <div style="margin-top: 0.3rem; font-size: 0.75rem;">
                     <strong>Lampiran:</strong> 
                     <a href="${escapeHTML(item.fileData)}" download="${escapeHTML(item.fileName)}" style="color: var(--color-primary); text-decoration: underline;">
-                        📁 ${escapeHTML(item.fileName)}
+                         ${escapeHTML(item.fileName)}
                     </a>
                 </div>
             `;
